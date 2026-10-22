@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Workify
 
-## Getting Started
+Free online PDF tools: merge, split, compress, convert (Word, PowerPoint, Excel,
+JPG, HTML, PDF/A, Markdown), edit, sign, watermark, redact, compare, OCR, forms,
+scan-to-PDF and reusable workflows. Built with Next.js 16.
 
-First, run the development server:
+## Requirements
+
+| Engine | Used for | Windows install |
+|---|---|---|
+| Node.js 24+ | the app | nodejs.org |
+| Python 3.13 venv in `py/.venv` | PDF→Word/Excel/PPT/Markdown/JPG, redact, OCR | `python -m venv py/.venv` then `py/.venv/Scripts/pip install pdf2docx pdfplumber openpyxl python-pptx pymupdf pymupdf4llm ocrmypdf` |
+| Ghostscript 10 | compress, PDF/A, OCR | official installer from Artifex |
+| qpdf | protect, unlock, repair | `winget install QPDF.QPDF` |
+| LibreOffice | Word/PPT/Excel→PDF | `winget install TheDocumentFoundation.LibreOffice` |
+| Tesseract | OCR | `winget install UB-Mannheim.TesseractOCR` |
+| Chrome or Edge | HTML→PDF | already on most PCs |
+
+Engines are found automatically in their default folders. Override any of them
+with `WORKIFY_GS`, `WORKIFY_QPDF`, `WORKIFY_SOFFICE`, `WORKIFY_TESSERACT`,
+`WORKIFY_PYTHON`, `WORKIFY_CHROME`.
+
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev            # development, http://localhost:3000
+npm run build && npx next start -H 127.0.0.1 -p 3000   # production
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Optional Google Drive / Dropbox import: see [CLOUD_SETUP.md](CLOUD_SETUP.md).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Configuration (environment variables)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Default | Meaning |
+|---|---|---|
+| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | public URL for canonical links, sitemap, social previews |
+| `WORKIFY_TRUST_PROXY` | off | set to `1` only behind a reverse proxy that sets `X-Forwarded-For` |
+| `WORKIFY_MAX_JOBS` | `4` | heavy conversions running at once |
+| `WORKIFY_MAX_QUEUE` | `20` | conversions allowed to wait before “busy” is returned |
+| `WORKIFY_PY_WORKERS` | `2` | warm Python worker processes |
 
-## Learn More
+## Deploying safely
 
-To learn more about Next.js, take a look at the following resources:
+1. **Put it behind a reverse proxy with HTTPS** (Caddy, nginx or a CDN such as
+   Cloudflare). Run Next on `127.0.0.1` so only the proxy can reach it, and set
+   `WORKIFY_TRUST_PROXY=1` so per-client rate limits use the real client IP.
+   Without a proxy, per-client limits can be evaded by forging
+   `X-Forwarded-For`; the global limits and the job queue still protect the server.
+2. **CDN**: all marketing and tool pages are prerendered and served with
+   `s-maxage`; `/_next/static/*` files are immutable. A CDN in front caches them
+   with no extra configuration. `/api/*`, `/account`, `/login`, `/signup` and
+   `/sign/*` are per-user and are not cached.
+3. **Firewall**: expose only ports 80/443 of the proxy. Never expose the Next
+   port, databases or other services directly.
+4. **Data**: `data/` holds the SQLite database and signature requests; back it
+   up and keep it out of the web root (it is, by default).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Security measures in the app
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Per-client + global rate limits, a bounded job queue, upload size and count limits
+  checked before the body is read.
+- CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS;
+  no `X-Powered-By`.
+- Passwords hashed with scrypt; constant-time comparison; equal-time failures for unknown
+  emails; login limited per IP and per email; sessions stored as SHA-256 hashes in
+  http-only, SameSite=Lax cookies; changing the password signs out other devices.
+- Safe redirects after login (no open redirect).
+- Uploaded files live in random, unguessable job folders, are never served from the
+  project folder, and are deleted after one hour (immediately on failure).
+- HTML→PDF blocks private/loopback/link-local addresses, also on redirects.
+- PDF passwords are passed to qpdf through a temporary args file, not the process list.
+- Ghostscript runs with `-dSAFER`; Python runs isolated (`-I`).
+- All coordinates, sizes and texts from the editors are validated and clamped server-side.

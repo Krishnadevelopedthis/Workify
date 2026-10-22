@@ -1,0 +1,132 @@
+"use client";
+
+import { optionVisible, POSITION_VALUES, type ToolOption } from "@/lib/tools";
+
+export type OptionValues = Record<string, string | number | boolean>;
+
+export function defaultValues(options: ToolOption[] = []): OptionValues {
+  const v: OptionValues = {};
+  for (const o of options) if (o.type !== "file") v[o.key] = o.default;
+  return v;
+}
+
+export function OptionsForm({
+  options,
+  values,
+  onChange,
+  extras,
+  onExtra,
+}: {
+  options: ToolOption[];
+  values: OptionValues;
+  onChange: (key: string, value: string | number | boolean) => void;
+  extras: Record<string, File>;
+  onExtra: (key: string, file: File | null) => void;
+}) {
+  return (
+    <div className="space-y-5">
+      {options.filter((o) => optionVisible(o, values)).map((o) => (
+        <div key={o.key}>
+          {o.type !== "checkbox" && <p className="mb-2 text-sm font-semibold text-ink">{o.label}</p>}
+          {o.type === "choice" && (
+            <div className="grid gap-2">
+              {o.choices.map((c) => {
+                const active = values[o.key] === c.value;
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => onChange(o.key, c.value)}
+                    className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition ${
+                      active ? "border-brand bg-brand/5" : "border-line bg-white hover:border-ink/30"
+                    }`}
+                  >
+                    <span
+                      className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 ${
+                        active ? "border-brand bg-[radial-gradient(var(--brand)_45%,transparent_50%)]" : "border-line"
+                      }`}
+                    />
+                    <span>
+                      <span className="block text-sm font-medium">{c.label}</span>
+                      {c.hint && <span className="block text-xs text-muted">{c.hint}</span>}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {(o.type === "text" || o.type === "password") && (
+            <>
+              <input
+                className="input"
+                type={o.type}
+                value={String(values[o.key] ?? "")}
+                placeholder={o.placeholder}
+                onChange={(e) => onChange(o.key, e.target.value)}
+                autoComplete={o.type === "password" ? "new-password" : "off"}
+              />
+              {o.hint && <p className="mt-1 text-xs text-muted">{o.hint}</p>}
+            </>
+          )}
+          {o.type === "number" && (
+            <input
+              className="input"
+              type="number"
+              value={String(values[o.key] ?? "")}
+              min={o.min}
+              max={o.max}
+              step={o.step ?? 1}
+              onChange={(e) => onChange(o.key, e.target.value === "" ? "" : Number(e.target.value))}
+            />
+          )}
+          {o.type === "checkbox" && (
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[var(--brand)]"
+                checked={Boolean(values[o.key])}
+                onChange={(e) => onChange(o.key, e.target.checked)}
+              />
+              {o.label}
+            </label>
+          )}
+          {o.type === "color" && (
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={String(values[o.key])}
+                onChange={(e) => onChange(o.key, e.target.value)}
+                className="h-10 w-14 cursor-pointer rounded border border-line"
+              />
+              <span className="font-mono text-sm text-muted">{String(values[o.key])}</span>
+            </div>
+          )}
+          {o.type === "position" && (
+            <div className="grid w-32 grid-cols-3 gap-1.5 rounded-lg border border-line bg-white p-2">
+              {POSITION_VALUES.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  aria-label={`Position ${p}`}
+                  onClick={() => onChange(o.key, p)}
+                  className={`h-8 rounded ${values[o.key] === p ? "bg-brand" : "bg-bg hover:bg-line"}`}
+                />
+              ))}
+            </div>
+          )}
+          {o.type === "file" && (
+            <div>
+              <input
+                type="file"
+                accept={o.accept}
+                onChange={(e) => onExtra(o.key, e.target.files?.[0] ?? null)}
+                className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand file:px-4 file:py-2 file:font-semibold file:text-white"
+              />
+              {extras[o.key] && <p className="mt-1 text-xs text-muted">{extras[o.key].name}</p>}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
