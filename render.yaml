@@ -1,0 +1,22 @@
+# Render Blueprint: Dashboard → New → Blueprint → pick this repo.
+services:
+  - type: web
+    name: workify
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: singapore # closest Render region to India
+    # 2 GB RAM: LibreOffice + Chromium + Python workers need it.
+    # Smaller plans (free/starter, 512 MB) run out of memory on conversions.
+    plan: standard
+    healthCheckPath: /api/session
+    autoDeploy: true
+    envVars:
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false # you are asked for it on first deploy, e.g. https://workify.onrender.com
+      - key: WORKIFY_TRUST_PROXY
+        value: "1"
+    # Accounts, saved workflows and signature requests (SQLite) live here.
+    disk:
+      name: workify-data
+      mountPath: /app/data
+      sizeGB: 1

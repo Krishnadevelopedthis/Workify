@@ -9,7 +9,20 @@ Python, Chromium), so it **cannot run on Vercel or Netlify**. The included
 
 ---
 
-## Option A — Railway (easiest, deploys from GitHub)
+## Option R — Render (uses `render.yaml`)
+
+1. <https://dashboard.render.com> → sign in with GitHub.
+2. **New → Blueprint →** select the `Workify` repo → Render reads `render.yaml`.
+3. When asked, set `NEXT_PUBLIC_SITE_URL` to `https://workify.onrender.com`
+   (or the URL Render shows / your own domain), then **Apply**.
+4. It creates a **Standard** web service (2 GB RAM) with a 1 GB disk at
+   `/app/data`. Pushes to `main` redeploy automatically.
+
+Notes: the free and Starter plans (512 MB) are too small; services with a disk
+run as a single instance (fine for SQLite). If you change
+`NEXT_PUBLIC_SITE_URL` later, trigger a new deploy (it is baked into the build).
+
+## Option A — Railway (deploys from GitHub)
 
 1. Go to <https://railway.com>, sign in with GitHub.
 2. **New Project → Deploy from GitHub repo →** choose `Workify`.

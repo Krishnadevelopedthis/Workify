@@ -52,6 +52,7 @@ RUN npm run build && npm prune --omit=dev --no-audit --no-fund
 
 ENV NODE_ENV=production \
     PORT=3000 \
+    HOME=/home/node \
     WORKIFY_TRUST_PROXY=1 \
     WORKIFY_CHROME=/usr/bin/chromium \
     WORKIFY_CHROME_NO_SANDBOX=1
@@ -64,4 +65,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/session').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["sh", "-c", "exec node_modules/.bin/next start -H 0.0.0.0 -p ${PORT:-3000}"]
+# Hosted disks (Render, Railway, Fly) are often mounted owned by root. Start as
+# root only to hand /app/data to the "node" user, then run the app as "node".
+USER root
+CMD ["sh", "-c", "chown -R node:node /app/data && exec setpriv --reuid=node --regid=node --init-groups node_modules/.bin/next start -H 0.0.0.0 -p ${PORT:-3000}"]
