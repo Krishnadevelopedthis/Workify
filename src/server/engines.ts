@@ -49,6 +49,18 @@ export const engines = {
     ]);
     return exe ? path.dirname(exe) : null;
   },
+  /** Folder with *.traineddata files: the project's data/tessdata (extra languages) or the system one. */
+  get tessdata() {
+    const candidates = [
+      process.env.WORKIFY_TESSDATA,
+      path.join(process.cwd(), "data", "tessdata"),
+      path.join(PF, "Tesseract-OCR", "tessdata"),
+      ...versionedDirs("/usr/share/tesseract-ocr", "").map((d) => path.join(d, "tessdata")),
+      "/usr/share/tessdata",
+    ];
+    // Tesseract also needs the "configs" folder (hocr/txt output settings) next to the models.
+    return candidates.find((d) => d && existsSync(path.join(d, "eng.traineddata")) && existsSync(path.join(d, "configs"))) ?? null;
+  },
   get python() {
     return locate("WORKIFY_PYTHON", () => [
       path.join(process.cwd(), "py", ".venv", "Scripts", "python.exe"),
@@ -99,10 +111,12 @@ export async function python(command: string, args: string[], timeoutMs = 300_00
   const tess = engines.tesseractDir;
   const gs = engines.ghostscript;
   const extraPath = [tess, gs && path.dirname(gs)].filter(Boolean).join(path.delimiter);
+  const tessdata = engines.tessdata;
   const env = {
     ...process.env,
     PYTHONIOENCODING: "utf-8",
     PATH: extraPath ? `${extraPath}${path.delimiter}${process.env.PATH ?? ""}` : process.env.PATH,
+    ...(tessdata ? { TESSDATA_PREFIX: tessdata } : {}),
   };
   let result: Record<string, unknown>;
   try {

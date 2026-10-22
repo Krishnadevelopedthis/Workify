@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "node scripts/copy-pdf-worker.mjs",
-    "icons": "node scripts/build-icons.mjs"
+    "icons": "node scripts/build-icons.mjs",
+    "ocr-languages": "node scripts/get-ocr-languages.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

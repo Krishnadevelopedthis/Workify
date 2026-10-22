@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { optionVisible, POSITION_VALUES, type ToolOption } from "@/lib/tools";
 
 export type OptionValues = Record<string, string | number | boolean>;
@@ -8,6 +9,53 @@ export function defaultValues(options: ToolOption[] = []): OptionValues {
   const v: OptionValues = {};
   for (const o of options) if (o.type !== "file") v[o.key] = o.default;
   return v;
+}
+
+/** Searchable checkbox list; the value is the chosen codes joined with "+". */
+function MultiPicker({
+  options,
+  max,
+  value,
+  onChange,
+}: {
+  options: { value: string; label: string }[];
+  max: number;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const selected = value.split("+").filter(Boolean);
+  const toggle = (v: string) => {
+    const next = selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v];
+    if (next.length && next.length <= max) onChange(next.join("+"));
+  };
+  const q = query.trim().toLowerCase();
+  const shown = q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap gap-1.5">
+        {selected.map((v) => (
+          <span key={v} className="rounded-full bg-ink px-2.5 py-0.5 text-xs text-white">
+            {options.find((o) => o.value === v)?.label ?? v}
+          </span>
+        ))}
+      </div>
+      <input className="input mb-2 !py-1.5 text-sm" placeholder="Search languages" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="max-h-56 space-y-0.5 overflow-y-auto rounded-lg border border-line p-1.5">
+        {shown.map((o) => {
+          const checked = selected.includes(o.value);
+          const disabled = !checked && selected.length >= max;
+          return (
+            <label key={o.value} className={`flex items-center gap-2 rounded px-2 py-1 text-sm ${disabled ? "opacity-40" : "cursor-pointer hover:bg-bg"}`}>
+              <input type="checkbox" className="h-4 w-4 accent-[var(--brand)]" checked={checked} disabled={disabled} onChange={() => toggle(o.value)} />
+              {o.label}
+            </label>
+          );
+        })}
+      </div>
+      <p className="mt-1 text-xs text-muted">Pick every language that appears in the document (at most {max}).</p>
+    </div>
+  );
 }
 
 export function OptionsForm({
@@ -89,6 +137,14 @@ export function OptionsForm({
               />
               {o.label}
             </label>
+          )}
+          {o.type === "multi" && (
+            <MultiPicker
+              options={o.choices}
+              max={o.max}
+              value={String(values[o.key] ?? "")}
+              onChange={(v) => onChange(o.key, v)}
+            />
           )}
           {o.type === "color" && (
             <div className="flex items-center gap-3">

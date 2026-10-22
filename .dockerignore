@@ -1,0 +1,11 @@
+node_modules
+.next
+data
+py/.venv
+**/__pycache__
+.git
+.env*
+npm-debug.log*
+public/pdf.worker.min.mjs
+*.tsbuildinfo
+next-env.d.ts

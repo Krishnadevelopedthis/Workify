@@ -1,0 +1,14 @@
+{$DOMAIN} {
+	encode zstd gzip
+	# Uploads can be up to 500 MB per task.
+	request_body {
+		max_size 520MB
+	}
+	reverse_proxy app:3000 {
+		# Large conversions can take a few minutes.
+		transport http {
+			read_timeout 15m
+			write_timeout 15m
+		}
+	}
+}

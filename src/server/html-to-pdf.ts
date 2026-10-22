@@ -69,7 +69,14 @@ export async function htmlToPdf(
   const browser = await puppeteer.launch({
     executablePath: chromePath(),
     headless: true,
-    args: ["--no-first-run", "--disable-extensions"],
+    args: [
+      "--no-first-run",
+      "--disable-extensions",
+      "--disable-dev-shm-usage",
+      // Containers usually cannot create Chrome's sandbox; the Docker image opts out
+      // explicitly. Pages are still limited to public addresses by checkPublicUrl.
+      ...(process.env.WORKIFY_CHROME_NO_SANDBOX === "1" ? ["--no-sandbox"] : []),
+    ],
   });
   try {
     const page = await browser.newPage();

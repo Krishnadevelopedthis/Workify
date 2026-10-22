@@ -5,7 +5,9 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { PDFDocument, PageSizes, degrees, PDFName, PDFArray } from "pdf-lib";
-import { need, python, run, ToolError } from "./engines";
+import { existsSync } from "node:fs";
+import { OCR_LANGUAGES } from "@/lib/tools";
+import { engines, need, python, run, ToolError } from "./engines";
 import type { Job, JobFile } from "./jobs";
 import {
   anchor,
@@ -194,12 +196,34 @@ const repair = eachFile(async (ctx, f) => {
   return [{ path: target, name }];
 });
 
-const ocr = eachFile(async (ctx, f) => {
-  const name = `${baseName(f.name)}_ocr.pdf`;
-  const lang = /^[a-z_+]{3,40}$/.test(ctx.opts.language ?? "") ? ctx.opts.language : "eng";
-  await python("ocr", [f.path, outPath(ctx, name), lang], 900_000);
-  return [{ path: outPath(ctx, name), name }];
-});
+const OCR_CODES = new Map(OCR_LANGUAGES);
+
+/** Validates "eng+hin" style input against the offered and installed languages. */
+function ocrLanguages(raw: string | undefined) {
+  const codes = [...new Set((raw || "eng").split("+").map((s) => s.trim()).filter(Boolean))];
+  if (codes.length > 5) throw new ToolError("Choose at most 5 languages.");
+  const unknown = codes.filter((c) => !OCR_CODES.has(c));
+  if (unknown.length) throw new ToolError(`Unsupported OCR language: ${unknown.join(", ")}.`);
+  const dir = engines.tessdata;
+  const missing = dir ? codes.filter((c) => !existsSync(path.join(dir, `${c}.traineddata`))) : codes;
+  if (missing.length) {
+    throw new ToolError(`OCR for ${missing.map((c) => OCR_CODES.get(c)).join(", ")} is not installed on this server yet.`);
+  }
+  return codes.join("+");
+}
+
+const ocr: Processor = async (ctx) => {
+  const lang = ocrLanguages(ctx.opts.language); // checked once, before any file is processed
+  return (
+    await Promise.all(
+      ctx.inputs.map(async (f) => {
+        const name = `${baseName(f.name)}_ocr.pdf`;
+        await python("ocr", [f.path, outPath(ctx, name), lang], 900_000);
+        return { path: outPath(ctx, name), name };
+      }),
+    )
+  );
+};
 
 // ---------- Convert ----------
 

@@ -30,13 +30,19 @@ setInterval(() => {
   for (const [k, w] of windows) if (!w.hits.some((t) => now - t < 3_600_000)) windows.delete(k);
 }, 600_000).unref();
 
+/**
+ * Client address from X-Forwarded-For. Each trusted proxy APPENDS the address it
+ * saw, so with N trusted proxies (WORKIFY_TRUST_PROXY=N) the real client is the
+ * N-th entry from the end; anything before it may be forged by the client.
+ * With no proxy the whole header is client-controlled, so the result is only a
+ * best-effort key (the global limits still apply).
+ */
 export function clientIp(headers: Headers) {
   const xff = headers.get("x-forwarded-for");
   if (!xff) return "local";
   const parts = xff.split(",").map((s) => s.trim()).filter(Boolean);
-  // Behind a trusted proxy, the proxy's own entry is the last one; the client is
-  // the one before it. Without a proxy the header is client-controlled anyway.
-  return (process.env.WORKIFY_TRUST_PROXY === "1" ? parts[0] : parts[parts.length - 1]) ?? "unknown";
+  const hops = Math.max(1, Math.floor(Number(process.env.WORKIFY_TRUST_PROXY) || 1));
+  return parts[Math.max(0, parts.length - hops)] ?? "unknown";
 }
 
 export type LimitRule = { perClient: number; global: number; windowMs: number };

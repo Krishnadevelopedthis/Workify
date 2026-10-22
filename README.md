@@ -24,18 +24,20 @@ with `WORKIFY_GS`, `WORKIFY_QPDF`, `WORKIFY_SOFFICE`, `WORKIFY_TESSERACT`,
 
 ```bash
 npm install
+npm run ocr-languages  # once: OCR data for 34 languages into data/tessdata
 npm run dev            # development, http://localhost:3000
 npm run build && npx next start -H 127.0.0.1 -p 3000   # production
 ```
 
-Optional Google Drive / Dropbox import: see [CLOUD_SETUP.md](CLOUD_SETUP.md).
+- Going live: see [DEPLOY.md](DEPLOY.md) (Docker image with every engine included).
+- Optional Google Drive / Dropbox import: see [CLOUD_SETUP.md](CLOUD_SETUP.md).
 
 ## Configuration (environment variables)
 
 | Variable | Default | Meaning |
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | public URL for canonical links, sitemap, social previews |
-| `WORKIFY_TRUST_PROXY` | off | set to `1` only behind a reverse proxy that sets `X-Forwarded-For` |
+| `WORKIFY_TRUST_PROXY` | `1` | number of reverse proxies in front of the app that append to `X-Forwarded-For` (e.g. `2` for CDN → nginx → app) |
 | `WORKIFY_MAX_JOBS` | `4` | heavy conversions running at once |
 | `WORKIFY_MAX_QUEUE` | `20` | conversions allowed to wait before “busy” is returned |
 | `WORKIFY_PY_WORKERS` | `2` | warm Python worker processes |
@@ -44,9 +46,10 @@ Optional Google Drive / Dropbox import: see [CLOUD_SETUP.md](CLOUD_SETUP.md).
 
 1. **Put it behind a reverse proxy with HTTPS** (Caddy, nginx or a CDN such as
    Cloudflare). Run Next on `127.0.0.1` so only the proxy can reach it, and set
-   `WORKIFY_TRUST_PROXY=1` so per-client rate limits use the real client IP.
-   Without a proxy, per-client limits can be evaded by forging
-   `X-Forwarded-For`; the global limits and the job queue still protect the server.
+   `WORKIFY_TRUST_PROXY` to the number of proxies in front of the app so
+   per-client rate limits use the real client IP. Without a proxy, per-client
+   limits can be evaded by forging `X-Forwarded-For`; the global limits and the
+   job queue still protect the server.
 2. **CDN**: all marketing and tool pages are prerendered and served with
    `s-maxage`; `/_next/static/*` files are immutable. A CDN in front caches them
    with no extra configuration. `/api/*`, `/account`, `/login`, `/signup` and

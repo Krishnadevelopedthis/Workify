@@ -1,0 +1,38 @@
+# Production on a VPS: Workify behind Caddy (automatic HTTPS).
+# 1. Point your domain's DNS A record at the server.
+# 2. Set DOMAIN below (or in a .env file next to this file).
+# 3. docker compose up -d --build
+services:
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SITE_URL: https://${DOMAIN:?set DOMAIN, e.g. workify.example.com}
+    restart: unless-stopped
+    environment:
+      WORKIFY_TRUST_PROXY: "1" # Caddy is the one proxy in front of the app
+    volumes:
+      - workify-data:/app/data
+    # Not published to the internet: only Caddy can reach it.
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2.8
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  workify-data:
+  caddy-data:
+  caddy-config:

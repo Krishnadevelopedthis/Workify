@@ -53,6 +53,16 @@ export type ToolOption =
       showIf?: ShowIf;
     }
   | { type: "checkbox"; key: string; label: string; default: boolean; showIf?: ShowIf }
+  | {
+      /** Several values joined with "+", e.g. "eng+hin". */
+      type: "multi";
+      key: string;
+      label: string;
+      default: string;
+      max: number;
+      choices: { value: string; label: string }[];
+      showIf?: ShowIf;
+    }
   | { type: "color"; key: string; label: string; default: string; showIf?: ShowIf }
   | { type: "position"; key: string; label: string; default: string; showIf?: ShowIf }
   | { type: "file"; key: string; label: string; accept: string; showIf?: ShowIf };
@@ -94,6 +104,44 @@ export type Tool = {
 };
 
 const PDF = ".pdf,application/pdf";
+
+/** Tesseract language codes offered by OCR PDF (code, label). */
+export const OCR_LANGUAGES: [string, string][] = [
+  ["eng", "English"],
+  ["hin", "Hindi"],
+  ["mar", "Marathi"],
+  ["ben", "Bengali"],
+  ["guj", "Gujarati"],
+  ["pan", "Punjabi"],
+  ["tam", "Tamil"],
+  ["tel", "Telugu"],
+  ["kan", "Kannada"],
+  ["mal", "Malayalam"],
+  ["urd", "Urdu"],
+  ["ori", "Odia"],
+  ["asm", "Assamese"],
+  ["nep", "Nepali"],
+  ["san", "Sanskrit"],
+  ["spa", "Spanish"],
+  ["fra", "French"],
+  ["deu", "German"],
+  ["ita", "Italian"],
+  ["por", "Portuguese"],
+  ["nld", "Dutch"],
+  ["rus", "Russian"],
+  ["ukr", "Ukrainian"],
+  ["pol", "Polish"],
+  ["tur", "Turkish"],
+  ["ara", "Arabic"],
+  ["fas", "Persian"],
+  ["chi_sim", "Chinese (Simplified)"],
+  ["chi_tra", "Chinese (Traditional)"],
+  ["jpn", "Japanese"],
+  ["kor", "Korean"],
+  ["vie", "Vietnamese"],
+  ["ind", "Indonesian"],
+  ["tha", "Thai"],
+];
 const POSITIONS = "tl,tc,tr,ml,mc,mr,bl,bc,br";
 export const POSITION_VALUES = POSITIONS.split(",");
 
@@ -728,11 +776,12 @@ export const TOOLS: Tool[] = [
     action: "OCR PDF",
     options: [
       {
-        type: "choice",
+        type: "multi",
         key: "language",
-        label: "Document language",
+        label: "Document languages (up to 5)",
         default: "eng",
-        choices: [{ value: "eng", label: "English" }],
+        max: 5,
+        choices: OCR_LANGUAGES.map(([value, label]) => ({ value, label })),
       },
     ],
   },
