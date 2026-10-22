@@ -9,6 +9,34 @@ Python, Chromium), so it **cannot run on Vercel or Netlify**. The included
 
 ---
 
+## Option O — Oracle Cloud "Always Free" (free forever, 4 CPU / 24 GB RAM)
+
+1. Sign up at <https://www.oracle.com/cloud/free/> (a card is needed only for
+   verification). Pick a home region near you (it cannot be changed later).
+2. **Compute → Instances → Create instance**
+   - Image: **Canonical Ubuntu 24.04** · Shape: **Ampere → VM.Standard.A1.Flex**, 4 OCPU, 24 GB
+   - Networking: create a new VCN with a **public subnet** and **assign a public IPv4 address**
+   - SSH keys: **Save private key** (keep it safe) · Boot volume: 100 GB
+   - "Out of capacity"? Try another availability domain or retry later.
+3. **Networking → Virtual cloud networks →** your VCN → subnet → **Default Security List →
+   Add Ingress Rules**: source `0.0.0.0/0`, TCP, destination port **80**; again for **443**.
+4. Free domain: <https://www.duckdns.org> → sign in → add a subdomain (e.g. `workify`)
+   → set its IP to the VM's public IP.
+5. Connect and install (Windows PowerShell):
+   ```powershell
+   ssh -i C:\path\to\ssh-key.key ubuntu@<PUBLIC_IP>
+   ```
+   then on the server:
+   ```bash
+   git clone https://github.com/Krishnadevelopedthis/Workify.git && cd Workify
+   bash deploy/oracle-setup.sh workify.duckdns.org
+   ```
+6. Open `https://workify.duckdns.org`. Update later with
+   `cd Workify && git pull && sudo docker compose up -d --build`.
+
+Oracle may reclaim Always Free VMs that stay almost completely idle for a week;
+upgrading the account to Pay-As-You-Go keeps the free resources free and avoids that.
+
 ## Option R — Render (uses `render.yaml`)
 
 1. <https://dashboard.render.com> → sign in with GitHub.

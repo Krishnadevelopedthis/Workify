@@ -27,7 +27,8 @@ USER node
 
 # Python converters in their own virtualenv (versions match the tested setup).
 COPY --chown=node:node py/requirements.txt py/requirements.txt
-RUN python3 -m venv py/.venv && py/.venv/bin/pip install --no-cache-dir -r py/requirements.txt
+RUN python3 -m venv py/.venv \
+ && py/.venv/bin/pip install --no-cache-dir --timeout 120 --retries 10 -r py/requirements.txt
 
 # Node dependencies (postinstall copies the pdf.js worker into public/).
 COPY --chown=node:node package.json package-lock.json ./
