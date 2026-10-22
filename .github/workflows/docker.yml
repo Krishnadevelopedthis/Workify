@@ -1,0 +1,57 @@
+name: Docker image
+
+on:
+  push:
+    branches: [main]
+    paths: [Dockerfile, .dockerignore, package.json, package-lock.json, py/**, src/**, next.config.ts, .github/workflows/docker.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t workify:ci --build-arg NEXT_PUBLIC_SITE_URL=http://localhost:3000 .
+
+      - name: Start container
+        run: |
+          docker run -d --name workify -p 3000:3000 workify:ci
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3000/api/session >/dev/null && break
+            sleep 2
+          done
+          curl -sf -o /dev/null -w "home page: HTTP %{http_code}\n" http://localhost:3000/
+
+      - name: Smoke test every engine
+        run: |
+          set -e
+          # Sample inputs made with tools inside the image.
+          docker exec workify gs -q -sDEVICE=pdfwrite -o /tmp/a.pdf -c "/Helvetica findfont 24 scalefont setfont 72 700 moveto (Workify smoke test) show showpage"
+          docker cp workify:/tmp/a.pdf a.pdf
+          printf 'Hello from a document.\n' > note.txt
+
+          check() { # name, then curl -F args; fails the job on any error response
+            name=$1; shift
+            body=$(curl -s -w '\n%{http_code}' -X POST "http://localhost:3000/api/process/$name" "$@")
+            code=$(echo "$body" | tail -1)
+            echo "$name -> HTTP $code $(echo "$body" | head -1 | cut -c1-160)"
+            [ "$code" = "200" ]
+          }
+          check merge-pdf -F files=@a.pdf -F files=@a.pdf -F 'options={}'
+          check compress-pdf -F files=@a.pdf -F 'options={"level":"recommended"}'
+          check protect-pdf -F files=@a.pdf -F 'options={"password":"x1","repeat":"x1"}'
+          check pdf-to-word -F files=@a.pdf -F 'options={}'
+          check pdf-to-jpg -F files=@a.pdf -F 'options={"mode":"pages","quality":"normal"}'
+          check word-to-pdf -F files=@note.txt -F 'options={}'
+          check ocr-pdf -F files=@a.pdf -F 'options={"language":"hin+eng"}'
+          check pdf-to-pdfa -F files=@a.pdf -F 'options={"conformance":"2"}'
+
+      - name: Container logs
+        if: always()
+        run: docker logs workify 2>&1 | tail -80

@@ -33,7 +33,7 @@ RUN python3 -m venv py/.venv \
 # Node dependencies (postinstall copies the pdf.js worker into public/).
 COPY --chown=node:node package.json package-lock.json ./
 COPY --chown=node:node scripts ./scripts
-RUN npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund --fetch-retries=6 --fetch-retry-maxtimeout=120000 --fetch-timeout=600000
 
 # Public values are baked into the build; pass them with --build-arg.
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
