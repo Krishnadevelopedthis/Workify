@@ -2,6 +2,7 @@
 
 import type { PageViewport } from "pdfjs-dist";
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/i18n/client";
 import { Icon } from "../../Icon";
 import { PageNav } from "../DrawLayer";
 import { Workspace } from "../GenericWorkspace";
@@ -22,6 +23,8 @@ const TOOLBAR: { id: ToolMode; icon: string; label: string }[] = [
 ];
 
 export default function EditEditor({ tool, items, submit, error, setError }: EditorProps) {
+  const t = useT();
+  const placeholder = t("Type your text");
   const { doc, error: loadError, numPages } = usePdf(items[0]?.file ?? null);
   const [page, setPage] = useState(1);
   const [vp, setVp] = useState<PageViewport | null>(null);
@@ -72,7 +75,7 @@ export default function EditEditor({ tool, items, submit, error, setError }: Edi
     const [x, y] = local(e);
     const id = elId();
     if (mode === "text") {
-      const el: El = { id, page, kind: "text", x, y, text: "Type your text", size: style.size, color: style.color, font: style.font, bold: style.bold };
+      const el: El = { id, page, kind: "text", x, y, text: placeholder, size: style.size, color: style.color, font: style.font, bold: style.bold };
       setElements((a) => [...a, el]);
       setSelected(id);
       setMode("select");
@@ -128,7 +131,7 @@ export default function EditEditor({ tool, items, submit, error, setError }: Edi
     const at = pendingImagePoint.current;
     pendingImagePoint.current = null;
     if (!file || !at) return;
-    if (!/image\/(png|jpe?g)/.test(file.type)) return setError("Use a PNG or JPG image.");
+    if (!/image\/(png|jpe?g)/.test(file.type)) return setError(t("Use a PNG or JPG image."));
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
@@ -145,7 +148,7 @@ export default function EditEditor({ tool, items, submit, error, setError }: Edi
   }
 
   function go() {
-    if (!elements.length) return setError("Add some text, an image, a shape or a drawing before saving.");
+    if (!elements.length) return setError(t("Add some text, an image, a shape or a drawing before saving."));
     const used = new Set(elements.flatMap((e) => (e.kind === "image" ? [e.image] : [])));
     const extras = Object.fromEntries(Object.entries(images).filter(([k]) => used.has(k)));
     submit([items[0].file], { overlays: elements.map(toOverlay) }, extras);
@@ -156,21 +159,21 @@ export default function EditEditor({ tool, items, submit, error, setError }: Edi
   return (
     <Workspace
       title={tool.name}
-      error={error ?? loadError ?? undefined}
+      error={error ?? (loadError ? t(loadError) : undefined)}
       action={tool.action}
       onAction={go}
       main={
         <div ref={fitMeasure} className="flex flex-col items-center">
           <div className="sticky top-2 z-20 mb-4 flex flex-wrap justify-center gap-1 rounded-xl border border-line bg-white p-1.5 shadow">
-            {TOOLBAR.map((t) => (
+            {TOOLBAR.map((b) => (
               <button
-                key={t.id}
-                title={t.label}
-                onClick={() => setMode(t.id)}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${mode === t.id ? "bg-brand text-white" : "hover:bg-bg"}`}
+                key={b.id}
+                title={t(b.label)}
+                onClick={() => setMode(b.id)}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${mode === b.id ? "bg-brand text-white" : "hover:bg-bg"}`}
               >
-                <Icon name={t.icon} size={18} />
-                <span className="hidden md:inline">{t.label}</span>
+                <Icon name={b.icon} size={18} />
+                <span className="hidden md:inline">{t(b.label)}</span>
               </button>
             ))}
           </div>
@@ -194,18 +197,18 @@ export default function EditEditor({ tool, items, submit, error, setError }: Edi
         <div className="space-y-5">
           {sel?.kind === "text" && (
             <div>
-              <p className="mb-2 text-sm font-semibold">Text</p>
+              <p className="mb-2 text-sm font-semibold">{t("Text")}</p>
               <textarea
                 className="input min-h-24"
                 value={sel.text}
                 onChange={(e) => update({ ...sel, text: e.target.value })}
-                onFocus={(e) => sel.text === "Type your text" && e.target.select()}
+                onFocus={(e) => sel.text === placeholder && e.target.select()}
                 autoFocus
               />
             </div>
           )}
           <div>
-            <p className="mb-2 text-sm font-semibold">Color</p>
+            <p className="mb-2 text-sm font-semibold">{t("Color")}</p>
             <div className="flex flex-wrap items-center gap-2">
               {["#000000", "#e5322d", "#2d7ff9", "#6aa84f", "#f1b800", "#8e44ad", "#ffffff"].map((c) => (
                 <button key={c} onClick={() => setStyleAndSelected({ color: c })} aria-label={c} className={`h-7 w-7 rounded-full border ${style.color === c ? "ring-2 ring-brand ring-offset-2" : "border-line"}`} style={{ background: c }} />
@@ -215,17 +218,17 @@ export default function EditEditor({ tool, items, submit, error, setError }: Edi
           </div>
           <div className="grid grid-cols-2 gap-3">
             <label className="text-sm">
-              <span className="mb-1 block font-semibold">Font size</span>
+              <span className="mb-1 block font-semibold">{t("Font size")}</span>
               <input type="number" min={6} max={144} className="input" value={style.size} onChange={(e) => setStyleAndSelected({ size: Number(e.target.value) || 16 })} />
             </label>
             <label className="text-sm">
-              <span className="mb-1 block font-semibold">Line width</span>
+              <span className="mb-1 block font-semibold">{t("Line width")}</span>
               <input type="number" min={1} max={20} className="input" value={style.strokeWidth} onChange={(e) => setStyleAndSelected({ strokeWidth: Number(e.target.value) || 1 })} />
             </label>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <label className="text-sm">
-              <span className="mb-1 block font-semibold">Font</span>
+              <span className="mb-1 block font-semibold">{t("Font")}</span>
               <select className="input" value={style.font} onChange={(e) => setStyleAndSelected({ font: e.target.value })}>
                 <option value="Helvetica">Helvetica</option>
                 <option value="TimesRoman">Times</option>
@@ -234,25 +237,25 @@ export default function EditEditor({ tool, items, submit, error, setError }: Edi
             </label>
             <label className="flex items-end gap-2 pb-2 text-sm font-semibold">
               <input type="checkbox" className="h-4 w-4 accent-[var(--brand)]" checked={style.bold} onChange={(e) => setStyleAndSelected({ bold: e.target.checked })} />
-              Bold
+              {t("Bold")}
             </label>
           </div>
           <label className="block text-sm">
-            <span className="mb-1 block font-semibold">Shape fill</span>
+            <span className="mb-1 block font-semibold">{t("Shape fill")}</span>
             <select className="input" value={style.fill} onChange={(e) => setStyleAndSelected({ fill: e.target.value })}>
-              <option value="">No fill</option>
-              <option value="#ffffff">White (cover content)</option>
-              <option value="#000000">Black</option>
-              <option value="#fff59d">Highlight yellow</option>
-              <option value={style.color}>Same as color</option>
+              <option value="">{t("No fill")}</option>
+              <option value="#ffffff">{t("White (cover content)")}</option>
+              <option value="#000000">{t("Black")}</option>
+              <option value="#fff59d">{t("Highlight yellow")}</option>
+              <option value={style.color}>{t("Same as color")}</option>
             </select>
           </label>
           {sel && (
             <button className="btn-secondary w-full !text-brand" onClick={() => remove(sel.id)}>
-              <Icon name="trash" size={18} /> Delete selected
+              <Icon name="trash" size={18} /> {t("Delete selected")}
             </button>
           )}
-          <p className="text-xs text-muted">{elements.length} edits on {new Set(elements.map((e) => e.page)).size} page(s). Tip: press Delete to remove the selected item.</p>
+          <p className="text-xs text-muted">{t("{n} edits on {pages} page(s). Tip: press Delete to remove the selected item.", { n: elements.length, pages: new Set(elements.map((e) => e.page)).size })}</p>
         </div>
       }
     />

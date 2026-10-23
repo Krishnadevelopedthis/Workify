@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { dropboxEnabled, googleEnabled, pickFromDropbox, pickFromGoogleDrive } from "@/lib/cloud-pickers";
+import { useT } from "@/i18n/client";
 import type { Tool } from "@/lib/tools";
 import { Icon } from "../Icon";
 
@@ -46,6 +47,7 @@ export function SelectFiles({
   onFiles: (files: File[]) => void;
   onError: (msg: string) => void;
 }) {
+  const t = useT();
   const [dragging, setDragging] = useState(false);
   const [cloudBusy, setCloudBusy] = useState(false);
   const picker = useFilePicker(tool, onFiles);
@@ -70,7 +72,7 @@ export function SelectFiles({
       setDragging(false);
       const files = Array.from(e.dataTransfer?.files ?? []);
       const ok = files.filter((f) => acceptsFile(tool, f));
-      if (files.length && !ok.length) onError(`Please drop ${tool.acceptLabel}.`);
+      if (files.length && !ok.length) onError(t("Please drop {kind}.", { kind: tool.acceptLabel }));
       else if (ok.length) onFiles(tool.multiple ? ok : ok.slice(0, 1));
     };
     window.addEventListener("dragenter", enter);
@@ -83,7 +85,7 @@ export function SelectFiles({
       window.removeEventListener("dragover", over);
       window.removeEventListener("drop", drop);
     };
-  }, [tool, onFiles, onError]);
+  }, [tool, onFiles, onError, t]);
 
   const cloud = async (fn: () => Promise<File[]>) => {
     setCloudBusy(true);
@@ -91,14 +93,12 @@ export function SelectFiles({
       const files = await fn();
       if (files.length) onFiles(files);
     } catch (e) {
-      onError(e instanceof Error ? e.message : "Could not get files from the cloud.");
+      onError(e instanceof Error ? t(e.message) : t("Could not get files from the cloud."));
     } finally {
       setCloudBusy(false);
     }
   };
 
-  const plural = tool.multiple ? "files" : "file";
-  const label = tool.acceptLabel.replace(/s$/, "");
 
   return (
     <section className="flex flex-1 flex-col items-center px-4 pt-14 pb-20 text-center">
@@ -110,13 +110,13 @@ export function SelectFiles({
           disabled={cloudBusy}
           className="rounded-xl bg-brand px-10 py-6 text-xl font-semibold text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark sm:px-16"
         >
-          Select {label} {plural}
+          {tool.multiple ? t("Select files") : t("Select file")}
         </button>
         {(googleEnabled || dropboxEnabled) && (
           <div className="flex flex-col gap-2">
             {googleEnabled && (
               <button
-                title={`Select ${label} from Google Drive`}
+                title={t("Select from Google Drive")}
                 disabled={cloudBusy}
                 onClick={() => cloud(() => pickFromGoogleDrive(tool.multiple, tool.accept.includes("pdf") ? "application/pdf" : ""))}
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-brand text-white shadow hover:bg-brand-dark"
@@ -126,7 +126,7 @@ export function SelectFiles({
             )}
             {dropboxEnabled && (
               <button
-                title={`Select ${label} from Dropbox`}
+                title={t("Select from Dropbox")}
                 disabled={cloudBusy}
                 onClick={() => cloud(() => pickFromDropbox(tool.multiple, extensions(tool)))}
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-brand text-white shadow hover:bg-brand-dark"
@@ -137,14 +137,14 @@ export function SelectFiles({
           </div>
         )}
       </div>
-      <p className="mt-4 text-sm text-muted">or drop {tool.acceptLabel} here</p>
-      {cloudBusy && <p className="mt-2 text-sm text-muted">Getting your files…</p>}
+      <p className="mt-4 text-sm text-muted">{t("or drop {kind} here", { kind: tool.acceptLabel })}</p>
+      {cloudBusy && <p className="mt-2 text-sm text-muted">{t("Getting your files…")}</p>}
       {picker.element}
       {dragging && (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-brand/90 text-3xl font-bold text-white">
           <div className="flex flex-col items-center gap-4">
             <Icon name="upload" size={64} />
-            Drop {tool.acceptLabel} here
+            {t("Drop {kind} here", { kind: tool.acceptLabel })}
           </div>
         </div>
       )}

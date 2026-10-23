@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -45,3 +46,19 @@ next-env.d.ts
 /data/
 __pycache__/
 /public/pdf.worker.min.mjs
+
+# keys, certificates, databases and logs never belong in git, wherever they are
+*.p12
+*.pfx
+*.key
+*.crt
+*.der
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.log
+passphrase
+/.vscode/
+/.idea/
+Thumbs.db

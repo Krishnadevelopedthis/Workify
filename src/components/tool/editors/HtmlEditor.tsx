@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useT } from "@/i18n/client";
+import { localizeOption } from "@/i18n/tools";
 import { Icon } from "../../Icon";
 import { OptionsForm, defaultValues, type OptionValues } from "../OptionsForm";
 import { ErrorBanner, type EditorProps } from "../ToolRunner";
@@ -56,12 +58,14 @@ const OPTIONS: ToolOption[] = [
 ];
 
 export default function HtmlEditor({ tool, submit, error, setError }: EditorProps) {
+  const t = useT();
+  const options = useMemo(() => OPTIONS.map((o) => localizeOption(o, t)), [t]);
   const [url, setUrl] = useState("");
   const [values, setValues] = useState<OptionValues>(() => defaultValues(OPTIONS));
 
   function go(e: React.FormEvent) {
     e.preventDefault();
-    if (!url.trim()) return setError("Paste the address of the web page you want to convert.");
+    if (!url.trim()) return setError(t("Paste the address of the web page you want to convert."));
     submit([], { ...values, url: url.trim() });
   }
 
@@ -71,7 +75,7 @@ export default function HtmlEditor({ tool, submit, error, setError }: EditorProp
       <p className="mt-4 max-w-2xl text-center text-lg text-muted">{tool.subtitle}</p>
       <ErrorBanner message={error} />
       <form onSubmit={go} className="mt-8 w-full max-w-2xl rounded-2xl border border-line bg-white p-6 shadow-sm sm:p-8">
-        <label className="text-sm font-semibold" htmlFor="url">Website URL</label>
+        <label className="text-sm font-semibold" htmlFor="url">{t("Website URL")}</label>
         <div className="mt-2 flex items-center gap-2 rounded-lg border border-line px-3 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20">
           <Icon name="world-www" size={22} className="text-muted" />
           <input
@@ -86,14 +90,14 @@ export default function HtmlEditor({ tool, submit, error, setError }: EditorProp
         </div>
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
           <OptionsForm
-            options={OPTIONS.slice(0, 2)}
+            options={options.slice(0, 2)}
             values={values}
             onChange={(k, v) => setValues((c) => ({ ...c, [k]: v }))}
             extras={{}}
             onExtra={() => {}}
           />
           <OptionsForm
-            options={OPTIONS.slice(2)}
+            options={options.slice(2)}
             values={values}
             onChange={(k, v) => setValues((c) => ({ ...c, [k]: v }))}
             extras={{}}
@@ -101,7 +105,7 @@ export default function HtmlEditor({ tool, submit, error, setError }: EditorProp
           />
         </div>
         <button className="btn-primary mt-8 w-full !py-4 text-lg">
-          {tool.action} <Icon name="arrow-right" size={22} />
+          {tool.action} <Icon name="arrow-right" size={22} className="rtl:rotate-180" />
         </button>
       </form>
     </section>

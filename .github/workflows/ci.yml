@@ -18,6 +18,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: node scripts/i18n-extract.mjs --check
+      - run: npm test
       - run: npx next typegen
       - run: npx tsc --noEmit
       - run: npx eslint src

@@ -11,7 +11,7 @@ type Result = Record<string, unknown>;
 type Job = { cmd: string; args: string[]; timeoutMs: number; resolve: (r: Result) => void; reject: (e: Error) => void };
 
 const RECYCLE_AFTER = 100; // restart a worker after this many jobs to cap memory growth
-const SCRIPT = path.join(process.cwd(), "py", "workify_tools.py");
+const SCRIPT = path.join(/* turbopackIgnore: true */ process.cwd(), "py", "workify_tools.py");
 
 class Worker {
   private proc: ChildProcessWithoutNullStreams;

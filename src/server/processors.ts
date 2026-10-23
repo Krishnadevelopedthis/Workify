@@ -138,6 +138,27 @@ async function splitBySize(ctx: Ctx, src: PDFDocument, stem: string): Promise<Ou
 
 const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 
+const removePages = eachFile(async (ctx, f) => {
+  if (!ctx.opts.pages?.trim()) throw new ToolError("Choose the pages you want to remove.");
+  const src = await loadPdf(f.path, f.name);
+  const total = src.getPageCount();
+  const remove = new Set(parsePageList(ctx.opts.pages, total));
+  const keep = range(1, total).filter((p) => !remove.has(p));
+  if (!keep.length) throw new ToolError("You can't remove every page. Keep at least one page.");
+  return [await savePdf(ctx, await extractPages(src, keep), `${baseName(f.name)}_pages_removed.pdf`)];
+});
+
+const extractPagesTool = eachFile(async (ctx, f) => {
+  if (!ctx.opts.pages?.trim()) throw new ToolError("Choose the pages you want to extract.");
+  const src = await loadPdf(f.path, f.name);
+  const pages = parsePageList(ctx.opts.pages, src.getPageCount());
+  const stem = baseName(f.name);
+  if (ctx.opts.separate !== "true") return [await savePdf(ctx, await extractPages(src, pages), `${stem}_extracted.pdf`)];
+  const outputs: Output[] = [];
+  for (const p of pages) outputs.push(await savePdf(ctx, await extractPages(src, [p]), `${stem}_page_${p}.pdf`));
+  return outputs;
+});
+
 type OrganizeItem = { file: number; page: number; rotate?: number } | { blank: true; width?: number; height?: number };
 
 const organize: Processor = async (ctx) => {
@@ -203,11 +224,11 @@ function ocrLanguages(raw: string | undefined) {
   const codes = [...new Set((raw || "eng").split("+").map((s) => s.trim()).filter(Boolean))];
   if (codes.length > 5) throw new ToolError("Choose at most 5 languages.");
   const unknown = codes.filter((c) => !OCR_CODES.has(c));
-  if (unknown.length) throw new ToolError(`Unsupported OCR language: ${unknown.join(", ")}.`);
+  if (unknown.length) throw new ToolError("Unsupported OCR language: {codes}.", { codes: unknown.join(", ") });
   const dir = engines.tessdata;
   const missing = dir ? codes.filter((c) => !existsSync(path.join(dir, `${c}.traineddata`))) : codes;
   if (missing.length) {
-    throw new ToolError(`OCR for ${missing.map((c) => OCR_CODES.get(c)).join(", ")} is not installed on this server yet.`);
+    throw new ToolError("OCR for {languages} is not installed on this server yet.", { languages: missing.map((c) => OCR_CODES.get(c)).join(", ") });
   }
   return codes.join("+");
 }
@@ -227,12 +248,17 @@ const ocr: Processor = async (ctx) => {
 
 // ---------- Convert ----------
 
-function pythonConvert(command: string, ext: string, suffix = "") {
-  return eachFile(async (ctx, f) => {
-    const name = `${baseName(f.name)}${suffix}.${ext}`;
-    await python(command, [f.path, outPath(ctx, name)], 600_000);
-    return [{ path: outPath(ctx, name), name }];
-  });
+/** `ocrable` tools can recognize scanned pages first (the "ocr" option). */
+function pythonConvert(command: string, ext: string, ocrable = false) {
+  return async (ctx: Ctx) => {
+    const lang = ocrable && ctx.opts.ocr === "true" ? ocrLanguages(ctx.opts.language) : null;
+    return eachFile(async (ctx, f) => {
+      const name = `${baseName(f.name)}.${ext}`;
+      if (lang) await python("ocr-convert", [ext, f.path, outPath(ctx, name), lang], 900_000);
+      else await python(command, [f.path, outPath(ctx, name)], 600_000);
+      return [{ path: outPath(ctx, name), name }];
+    })(ctx);
+  };
 }
 
 // LibreOffice initialises a user profile on first use (~10 s). Reusing one
@@ -259,7 +285,7 @@ const officeToPdf = eachFile(async (ctx, f) => {
     ),
   );
   const pdf = (await readdir(work)).find((n) => n.toLowerCase().endsWith(".pdf"));
-  if (!pdf) throw new ToolError(`"${f.name}" could not be converted. Is the file valid?`);
+  if (!pdf) throw new ToolError('"{file}" could not be converted. Is the file valid?', { file: f.name });
   const name = `${baseName(f.name)}.pdf`;
   await copyFile(path.join(work, pdf), outPath(ctx, name));
   return [{ path: outPath(ctx, name), name }];
@@ -290,7 +316,7 @@ const imagesToPdf: Processor = async (ctx) => {
     try {
       img = isPng ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
     } catch {
-      throw new ToolError(`"${f.name}" is not a supported image.`);
+      throw new ToolError('"{file}" is not a supported image.', { file: f.name });
     }
     let [pw, ph] =
       size === "a4" ? PageSizes.A4 : size === "letter" ? PageSizes.Letter : [img.width + margin * 2, img.height + margin * 2];
@@ -489,7 +515,7 @@ const stroke = (v: unknown) => num(v, 0, 50, 1);
 
 export async function applyOverlays(ctx: Pick<Ctx, "extras">, doc: PDFDocument, overlays: Overlay[]) {
   if (!Array.isArray(overlays)) throw new ToolError("The edits could not be read.");
-  if (overlays.length > MAX_OVERLAYS) throw new ToolError(`At most ${MAX_OVERLAYS} edits can be saved at once.`);
+  if (overlays.length > MAX_OVERLAYS) throw new ToolError("At most {max} edits can be saved at once.", { max: MAX_OVERLAYS });
   const images = new Map<string, Awaited<ReturnType<PDFDocument["embedPng"]>>>();
   for (const ov of overlays) {
     if (!ov || typeof ov !== "object") continue;
@@ -630,7 +656,7 @@ const protect = eachFile(async (ctx, f) => {
     await qpdfWithArgsFile(ctx, ["--encrypt", pw, pw, "256", "--", f.path, outPath(ctx, name)]);
   } catch (e) {
     if (e instanceof ToolError) throw e;
-    if (String(e).includes("password")) throw new ToolError(`"${f.name}" is already password protected.`);
+    if (String(e).includes("password")) throw new ToolError('"{file}" is already password protected.', { file: f.name });
     throw e;
   }
   return [{ path: outPath(ctx, name), name }];
@@ -645,7 +671,7 @@ const unlock = eachFile(async (ctx, f) => {
   } catch (e) {
     if (e instanceof ToolError) throw e;
     if (String(e).toLowerCase().includes("invalid password")) {
-      throw new ToolError(`"${f.name}" needs its password to open. Type it in the password box.`);
+      throw new ToolError('"{file}" needs its password to open. Type it in the password box.', { file: f.name });
     }
     throw e;
   }
@@ -670,9 +696,11 @@ export const PROCESSORS: Record<string, Processor> = {
   "compress-pdf": compress,
   "repair-pdf": repair,
   "ocr-pdf": ocr,
-  "pdf-to-word": pythonConvert("pdf2docx", "docx"),
-  "pdf-to-powerpoint": pythonConvert("pdf2pptx", "pptx"),
-  "pdf-to-excel": pythonConvert("pdf2xlsx", "xlsx"),
+  "remove-pages": removePages,
+  "extract-pages": extractPagesTool,
+  "pdf-to-word": pythonConvert("pdf2docx", "docx", true),
+  "pdf-to-powerpoint": pythonConvert("pdf2pptx", "pptx", true),
+  "pdf-to-excel": pythonConvert("pdf2xlsx", "xlsx", true),
   "pdf-to-markdown": pythonConvert("pdf2md", "md"),
   "word-to-pdf": officeToPdf,
   "powerpoint-to-pdf": officeToPdf,

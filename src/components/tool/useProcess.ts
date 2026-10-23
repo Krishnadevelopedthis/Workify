@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useLang, useT } from "@/i18n/client";
 
 export type ProcessResult = {
   jobId: string;
@@ -20,6 +21,8 @@ export type ProcessState =
 
 /** Uploads files + options to /api/process/<slug>, reporting upload progress. */
 export function useProcess(slug: string) {
+  const t = useT();
+  const lang = useLang();
   const [state, setState] = useState<ProcessState>({ phase: "idle" });
 
   const run = useCallback(
@@ -34,6 +37,8 @@ export function useProcess(slug: string) {
       setState({ phase: "uploading", progress: 0 });
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `/api/process/${slug}`);
+      // Error messages come back in the visitor's language.
+      xhr.setRequestHeader("x-wf-lang", lang);
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) setState({ phase: "uploading", progress: e.loaded / e.total });
       };
@@ -48,13 +53,13 @@ export function useProcess(slug: string) {
         if (xhr.status >= 200 && xhr.status < 300 && body.jobId) {
           setState({ phase: "done", result: body as ProcessResult });
         } else {
-          setState({ phase: "idle", error: body.error ?? "Something went wrong. Please try again." });
+          setState({ phase: "idle", error: body.error ?? t("Something went wrong. Please try again.") });
         }
       };
-      xhr.onerror = () => setState({ phase: "idle", error: "Network error. Check your connection and try again." });
+      xhr.onerror = () => setState({ phase: "idle", error: t("Network error. Check your connection and try again.") });
       xhr.send(form);
     },
-    [slug],
+    [slug, lang, t],
   );
 
   const reset = useCallback(() => setState({ phase: "idle" }), []);

@@ -2,12 +2,14 @@
 
 import type { PageViewport } from "pdfjs-dist";
 import { useState } from "react";
+import { useT } from "@/i18n/client";
 import { DrawLayer, PageNav, type Box } from "../DrawLayer";
 import { Workspace } from "../GenericWorkspace";
 import { PdfPage, rectToPdf, rectToScreen, useFitWidth, usePdf } from "../PdfPage";
 import type { EditorProps } from "../ToolRunner";
 
 export default function CropEditor({ tool, items, submit, error, setError }: EditorProps) {
+  const t = useT();
   const { doc, error: loadError, numPages } = usePdf(items[0]?.file ?? null);
   const [page, setPage] = useState(1);
   // Stored in PDF points so the selection survives resizes and page changes.
@@ -19,14 +21,14 @@ export default function CropEditor({ tool, items, submit, error, setError }: Edi
   const onBox = (b: Box) => vp && setPdfBox(rectToPdf(vp, b.left, b.top, b.width, b.height));
 
   function go() {
-    if (!pdfBox) return setError("Drag on the page to select the area you want to keep.");
+    if (!pdfBox) return setError(t("Drag on the page to select the area you want to keep."));
     submit([items[0].file], { box: pdfBox, apply, page });
   }
 
   return (
     <Workspace
       title={tool.name}
-      error={error ?? loadError ?? undefined}
+      error={error ?? (loadError ? t(loadError) : undefined)}
       action={tool.action}
       onAction={go}
       main={
@@ -49,10 +51,10 @@ export default function CropEditor({ tool, items, submit, error, setError }: Edi
       sidebar={
         <div className="space-y-5">
           <p className="rounded-lg bg-bg p-4 text-sm text-muted">
-            Drag on the page to draw the area you want to keep. Everything outside it is cropped away.
+            {t("Drag on the page to draw the area you want to keep. Everything outside it is cropped away.")}
           </p>
           <div>
-            <p className="mb-2 text-sm font-semibold">Apply to</p>
+            <p className="mb-2 text-sm font-semibold">{t("Apply to")}</p>
             <div className="grid grid-cols-2 gap-2">
               {(["all", "current"] as const).map((v) => (
                 <button
@@ -60,18 +62,18 @@ export default function CropEditor({ tool, items, submit, error, setError }: Edi
                   onClick={() => setApply(v)}
                   className={`rounded-lg border px-3 py-2 text-sm font-medium ${apply === v ? "border-brand bg-brand/5 text-brand" : "border-line"}`}
                 >
-                  {v === "all" ? "All pages" : "Current page"}
+                  {v === "all" ? t("All pages") : t("Current page")}
                 </button>
               ))}
             </div>
           </div>
           {pdfBox && (
             <p className="text-xs text-muted">
-              Selection: {Math.round(pdfBox.width)} × {Math.round(pdfBox.height)} pt
+              {t("Selection: {w} × {h} pt", { w: Math.round(pdfBox.width), h: Math.round(pdfBox.height) })}
             </p>
           )}
           <button className="text-sm font-medium text-brand underline" onClick={() => setPdfBox(null)}>
-            Reset selection
+            {t("Reset selection")}
           </button>
         </div>
       }

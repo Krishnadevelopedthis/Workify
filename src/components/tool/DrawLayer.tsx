@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
+import { useT } from "@/i18n/client";
 
 export type Box = { left: number; top: number; width: number; height: number };
 
@@ -67,17 +68,18 @@ export function DrawLayer({
 
 /** Small page switcher used by single-document editors. */
 export function PageNav({ page, total, onPage }: { page: number; total: number; onPage: (p: number) => void }) {
+  const t = useT();
   if (total <= 1) return null;
   return (
     <div className="mb-4 flex items-center justify-center gap-3 text-sm">
       <button className="btn-secondary !px-3 !py-1.5" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-        ‹ Prev
+        ‹ {t("Prev")}
       </button>
       <span className="font-medium">
-        Page {page} of {total}
+        {t("Page {page} of {total}", { page, total })}
       </span>
       <button className="btn-secondary !px-3 !py-1.5" disabled={page >= total} onClick={() => onPage(page + 1)}>
-        Next ›
+        {t("Next")} ›
       </button>
     </div>
   );

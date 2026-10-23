@@ -12,6 +12,7 @@ import {
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useState } from "react";
+import { useT } from "@/i18n/client";
 import { formatBytes, pdfThumbnail } from "@/lib/pdf-client";
 import { Icon } from "../Icon";
 import { LazyVisible } from "./PdfPage";
@@ -52,6 +53,7 @@ function usePdfThumb(file: File, enabled: boolean): ThumbState {
 }
 
 function Thumb({ file, rotation }: { file: File; rotation: number }) {
+  const t = useT();
   const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
   const isImage = file.type.startsWith("image/");
   const pdf = usePdfThumb(file, isPdf);
@@ -69,15 +71,15 @@ function Thumb({ file, rotation }: { file: File; rotation: number }) {
           style={{ transform: `rotate(${rotation}deg)` }}
         />
       ) : state.locked ? (
-        <span className="flex flex-col items-center gap-1 text-muted"><Icon name="lock" size={36} /> Protected</span>
+        <span className="flex flex-col items-center gap-1 text-muted"><Icon name="lock" size={36} /> {t("Protected")}</span>
       ) : (
         <span className="flex h-24 w-20 items-center justify-center rounded border border-line bg-white text-sm font-bold text-muted">
           {state.failed ? "?" : ext}
         </span>
       )}
       {state.pages !== undefined && (
-        <span className="absolute bottom-1.5 left-1.5 rounded bg-ink/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-          {state.pages} {state.pages === 1 ? "page" : "pages"}
+        <span className="absolute start-1.5 bottom-1.5 rounded bg-ink/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+          {state.pages === 1 ? t("1 page") : t("{n} pages", { n: state.pages })}
         </span>
       )}
     </div>
@@ -99,6 +101,7 @@ function Card({
   onRotate: () => void;
   sortable: boolean;
 }) {
+  const t = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id, disabled: !sortable });
   return (
     <div
@@ -114,18 +117,18 @@ function Card({
       </div>
       <p className="mt-2 truncate px-1 text-sm font-medium" title={item.file.name}>{item.file.name}</p>
       <p className="px-1 text-xs text-muted">{formatBytes(item.file.size)}</p>
-      <div className="absolute top-1 right-1 flex gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
+      <div className="absolute end-1 top-1 flex gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
         {canRotate && (
-          <button onClick={onRotate} className="rounded-full bg-white p-1.5 shadow hover:text-brand" title="Rotate">
+          <button onClick={onRotate} className="rounded-full bg-white p-1.5 shadow hover:text-brand" title={t("Rotate")}>
             <Icon name="rotate-clockwise" size={16} />
           </button>
         )}
-        <button onClick={onRemove} className="rounded-full bg-white p-1.5 shadow hover:text-brand" title="Remove">
+        <button onClick={onRemove} className="rounded-full bg-white p-1.5 shadow hover:text-brand" title={t("Remove")}>
           <Icon name="x" size={16} />
         </button>
       </div>
       {sortable && (
-        <span className="absolute top-2 left-2 rounded-full bg-ink/80 px-2 py-0.5 text-[10px] font-bold text-white">{index + 1}</span>
+        <span className="absolute start-2 top-2 rounded-full bg-ink/80 px-2 py-0.5 text-[10px] font-bold text-white">{index + 1}</span>
       )}
     </div>
   );
@@ -146,6 +149,7 @@ export function FileCards({
   onAddMore?: () => void;
   showSort?: boolean;
 }) {
+  const t = useT();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -166,7 +170,7 @@ export function FileCards({
               className="btn-secondary !py-2 text-sm"
               onClick={() => setItems([...items].sort((a, b) => a.file.name.localeCompare(b.file.name, undefined, { numeric: true })))}
             >
-              <Icon name="sort-ascending-letters" size={18} /> Sort A-Z
+              <Icon name="sort-ascending-letters" size={18} /> {t("Sort A-Z")}
             </button>
           )}
         </div>
@@ -195,7 +199,7 @@ export function FileCards({
                 <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand text-white">
                   <Icon name="plus" size={26} />
                 </span>
-                Add more files
+                {t("Add more files")}
               </button>
             )}
           </div>

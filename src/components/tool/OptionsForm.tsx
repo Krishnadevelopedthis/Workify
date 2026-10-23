@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/i18n/client";
 import { optionVisible, POSITION_VALUES, type ToolOption } from "@/lib/tools";
 
 export type OptionValues = Record<string, string | number | boolean>;
@@ -23,6 +24,7 @@ function MultiPicker({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const selected = value.split("+").filter(Boolean);
   const toggle = (v: string) => {
@@ -40,7 +42,7 @@ function MultiPicker({
           </span>
         ))}
       </div>
-      <input className="input mb-2 !py-1.5 text-sm" placeholder="Search languages" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <input className="input mb-2 !py-1.5 text-sm" placeholder={t("Search languages")} value={query} onChange={(e) => setQuery(e.target.value)} />
       <div className="max-h-56 space-y-0.5 overflow-y-auto rounded-lg border border-line p-1.5">
         {shown.map((o) => {
           const checked = selected.includes(o.value);
@@ -53,7 +55,7 @@ function MultiPicker({
           );
         })}
       </div>
-      <p className="mt-1 text-xs text-muted">Pick every language that appears in the document (at most {max}).</p>
+      <p className="mt-1 text-xs text-muted">{t("Pick every language that appears in the document (at most {max}).", { max })}</p>
     </div>
   );
 }
@@ -71,6 +73,7 @@ export function OptionsForm({
   extras: Record<string, File>;
   onExtra: (key: string, file: File | null) => void;
 }) {
+  const t = useT();
   return (
     <div className="space-y-5">
       {options.filter((o) => optionVisible(o, values)).map((o) => (
@@ -85,7 +88,7 @@ export function OptionsForm({
                     key={c.value}
                     type="button"
                     onClick={() => onChange(o.key, c.value)}
-                    className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition ${
+                    className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 text-start transition ${
                       active ? "border-brand bg-brand/5" : "border-line bg-white hover:border-ink/30"
                     }`}
                   >
@@ -163,7 +166,7 @@ export function OptionsForm({
                 <button
                   key={p}
                   type="button"
-                  aria-label={`Position ${p}`}
+                  aria-label={t("Position {p}", { p })}
                   onClick={() => onChange(o.key, p)}
                   className={`h-8 rounded ${values[o.key] === p ? "bg-brand" : "bg-bg hover:bg-line"}`}
                 />
@@ -176,7 +179,7 @@ export function OptionsForm({
                 type="file"
                 accept={o.accept}
                 onChange={(e) => onExtra(o.key, e.target.files?.[0] ?? null)}
-                className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand file:px-4 file:py-2 file:font-semibold file:text-white"
+                className="block w-full text-sm file:me-3 file:rounded-lg file:border-0 file:bg-brand file:px-4 file:py-2 file:font-semibold file:text-white"
               />
               {extras[o.key] && <p className="mt-1 text-xs text-muted">{extras[o.key].name}</p>}
             </div>

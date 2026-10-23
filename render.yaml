@@ -1,4 +1,5 @@
 # Render Blueprint: Dashboard → New → Blueprint → pick this repo.
+# Every variable is explained in DEPLOY.md ("Environment variables").
 services:
   - type: web
     name: workify
@@ -8,14 +9,36 @@ services:
     # 2 GB RAM: LibreOffice + Chromium + Python workers need it.
     # Smaller plans (free/starter, 512 MB) run out of memory on conversions.
     plan: standard
-    healthCheckPath: /api/session
+    healthCheckPath: /api/health
     autoDeploy: true
     envVars:
       - key: NEXT_PUBLIC_SITE_URL
         sync: false # you are asked for it on first deploy, e.g. https://workify.onrender.com
       - key: WORKIFY_TRUST_PROXY
         value: "1"
-    # Accounts, saved workflows and signature requests (SQLite) live here.
+      - key: WORKIFY_SECRET
+        generateValue: true # random secret for signing links and webhook signatures
+      - key: WORKIFY_ADMIN_EMAILS
+        sync: false # your email; admin once it is verified
+      # Outgoing email (verification, password reset, signing invitations).
+      - key: SMTP_HOST
+        sync: false # e.g. smtp.gmail.com or smtp-relay.brevo.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false # e.g. Workify <you@gmail.com>
+      - key: WORKIFY_BACKUP_KEEP
+        value: "14" # daily database backups kept in /app/data/backups
+      # Optional, add under Environment when needed:
+      # SMTP_SECURE, WORKIFY_SIGN_P12 (a file on the disk, e.g. /app/data/certs/seal.p12),
+      # WORKIFY_SIGN_P12_PASSWORD, WORKIFY_MAX_JOBS, WORKIFY_MAX_QUEUE, WORKIFY_PY_WORKERS,
+      # and the build-time Google Drive / Dropbox keys from CLOUD_SETUP.md.
+    # Accounts, workflows, signature requests (SQLite), signature files, the
+    # signing certificate and daily backups live here.
     disk:
       name: workify-data
       mountPath: /app/data

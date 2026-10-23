@@ -52,7 +52,7 @@ export async function checkPublicUrl(raw: string) {
   }
   if (!["http:", "https:"].includes(url.protocol)) throw new ToolError("Only http and https pages can be converted.");
   const addrs = await lookup(url.hostname, { all: true }).catch(() => {
-    throw new ToolError(`Could not find the website "${url.hostname}".`);
+    throw new ToolError('Could not find the website "{host}".', { host: url.hostname });
   });
   if (addrs.some((a) => isPrivateAddress(a.address))) {
     throw new ToolError("Private and local network addresses cannot be converted.");
@@ -95,7 +95,7 @@ export async function htmlToPdf(
     const width = { mobile: 375, tablet: 768, desktop: 1440 }[opts.screenWidth] ?? 1440;
     await page.setViewport({ width, height: 900 });
     await page.goto(url.href, { waitUntil: "networkidle2", timeout: 45_000 }).catch((e: Error) => {
-      throw new ToolError(`The page could not be loaded: ${e.message.split("\n")[0]}`);
+      throw new ToolError("The page could not be loaded: {reason}", { reason: e.message.split("\n")[0] });
     });
     const margin = { none: "0", small: "10mm", big: "25mm" }[opts.margin] ?? "10mm";
     if (opts.onePage) {

@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/i18n/client";
 import { Icon } from "./Icon";
 
 type PromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
 /** "Install Workify" button using the browser's PWA install prompt when available. */
 export function InstallApp() {
+  const t = useT();
   const [prompt, setPrompt] = useState<PromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
 
@@ -24,12 +26,11 @@ export function InstallApp() {
     };
   }, []);
 
-  if (installed) return <p className="font-semibold text-[#4a8a32]">Workify is installed. Look for it in your apps.</p>;
+  if (installed) return <p className="font-semibold text-[#4a8a32]">{t("Workify is installed. Look for it in your apps.")}</p>;
   if (!prompt) {
     return (
       <p className="text-sm text-muted">
-        Your browser will offer an <strong>Install</strong> option in its menu (Chrome/Edge: the install icon in the
-        address bar; Safari on iPhone: Share → Add to Home Screen).
+        {t("Your browser offers an Install option in its menu (Chrome/Edge: the install icon in the address bar; Safari on iPhone: Share → Add to Home Screen).")}
       </p>
     );
   }
@@ -42,7 +43,7 @@ export function InstallApp() {
         setPrompt(null);
       }}
     >
-      <Icon name="download" size={20} /> Install Workify
+      <Icon name="download" size={20} /> {t("Install Workify")}
     </button>
   );
 }

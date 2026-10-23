@@ -7,12 +7,13 @@ export async function loadPdf(filePath: string, name: string) {
   const bytes = await readFile(filePath);
   try {
     const doc = await PDFDocument.load(bytes, { updateMetadata: false });
+    doc.getPageCount(); // a "%PDF-" header with junk after it only fails here
     return doc;
   } catch (e) {
     if (String(e).includes("encrypted")) {
-      throw new ToolError(`"${name}" is password protected. Unlock it first with Unlock PDF.`);
+      throw new ToolError('"{file}" is password protected. Unlock it first with Unlock PDF.', { file: name });
     }
-    throw new ToolError(`"${name}" is not a valid PDF or is damaged. Try Repair PDF first.`);
+    throw new ToolError('"{file}" is not a valid PDF or is damaged. Try Repair PDF first.', { file: name });
   }
 }
 
@@ -48,10 +49,10 @@ export function parsePageList(spec: string, total: number): number[] {
       const p = +part;
       if (p >= 1 && p <= total) pages.add(p);
     } else {
-      throw new ToolError(`"${part}" is not a valid page or range.`);
+      throw new ToolError('"{part}" is not a valid page or range.', { part });
     }
   }
-  if (!pages.size) throw new ToolError(`No pages match "${spec}". This PDF has ${total} pages.`);
+  if (!pages.size) throw new ToolError('No pages match "{spec}". This PDF has {total} pages.', { spec, total });
   return [...pages].sort((a, b) => a - b);
 }
 
@@ -60,11 +61,11 @@ export function parseRanges(spec: string, total: number): [number, number][] {
   const ranges: [number, number][] = [];
   for (const part of spec.split(",").map((p) => p.trim()).filter(Boolean)) {
     const m = /^(\d+)\s*(?:-\s*(\d+))?$/.exec(part);
-    if (!m) throw new ToolError(`"${part}" is not a valid range. Use a format like 1-3.`);
+    if (!m) throw new ToolError('"{part}" is not a valid range. Use a format like 1-3.', { part });
     const from = +m[1];
     const to = m[2] ? +m[2] : from;
     if (from < 1 || to > total || from > to) {
-      throw new ToolError(`Range "${part}" is outside this PDF's ${total} pages.`);
+      throw new ToolError('Range "{part}" is outside this PDF\'s {total} pages.', { part, total });
     }
     ranges.push([from, to]);
   }

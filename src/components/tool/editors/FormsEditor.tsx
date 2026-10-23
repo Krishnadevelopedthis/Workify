@@ -2,6 +2,7 @@
 
 import type { PageViewport } from "pdfjs-dist";
 import { useEffect, useState } from "react";
+import { useLang, useT } from "@/i18n/client";
 import { Icon } from "../../Icon";
 import { DrawLayer, PageNav, type Box } from "../DrawLayer";
 import { Workspace } from "../GenericWorkspace";
@@ -21,6 +22,8 @@ const fromArray = ([x0, y0, x1, y1]: number[]): PdfRect => ({
 });
 
 export default function FormsEditor({ tool, items, submit, error, setError }: EditorProps) {
+  const t = useT();
+  const lang = useLang();
   const file = items[0]?.file ?? null;
   const { doc, error: loadError, numPages } = usePdf(file);
   const [page, setPage] = useState(1);
@@ -79,10 +82,10 @@ export default function FormsEditor({ tool, items, submit, error, setError }: Ed
     try {
       const body = new FormData();
       body.append("file", file);
-      const res = await fetch("/api/detect-fields", { method: "POST", body });
+      const res = await fetch("/api/detect-fields", { method: "POST", body, headers: { "x-wf-lang": lang } });
       const data = (await res.json()) as { fields?: { page: number; rect: number[]; kind: "text" | "checkbox" }[]; error?: string };
-      if (!res.ok) return setError(data.error ?? "Detection failed.");
-      if (!data.fields?.length) return setError("No form fields were detected. Draw them on the page instead.");
+      if (!res.ok) return setError(data.error ?? t("Detection failed."));
+      if (!data.fields?.length) return setError(t("No form fields were detected. Draw them on the page instead."));
       setCreated((c) => [
         ...c,
         ...data.fields!.map((f, i) => ({ id: ++nextId, page: f.page, kind: f.kind, name: `${f.kind}_${c.length + i + 1}`, rect: fromArray(f.rect) })),
@@ -94,7 +97,7 @@ export default function FormsEditor({ tool, items, submit, error, setError }: Ed
 
   function go() {
     if (!created.length && !Object.keys(values).length) {
-      return setError("This PDF has no form fields yet. Detect or draw some first.");
+      return setError(t("This PDF has no form fields yet. Detect or draw some first."));
     }
     submit([items[0].file], {
       form: {
@@ -108,7 +111,7 @@ export default function FormsEditor({ tool, items, submit, error, setError }: Ed
   return (
     <Workspace
       title={tool.name}
-      error={error ?? loadError ?? undefined}
+      error={error ?? (loadError ? t(loadError) : undefined)}
       action={tool.action}
       onAction={go}
       main={
@@ -128,11 +131,11 @@ export default function FormsEditor({ tool, items, submit, error, setError }: Ed
                     .filter((f) => f.page === page)
                     .map((f) => (
                       <div key={f.id} className="group absolute border-2 border-brand bg-brand/10" style={rectToScreen(vp, f.rect)}>
-                        <span className="absolute -top-5 left-0 rounded bg-brand px-1 text-[10px] whitespace-nowrap text-white">{f.name}</span>
+                        <span className="absolute start-0 -top-5 rounded bg-brand px-1 text-[10px] whitespace-nowrap text-white">{f.name}</span>
                         <button
                           onClick={() => setCreated((all) => all.filter((x) => x.id !== f.id))}
-                          className="absolute -top-3 -right-3 hidden h-6 w-6 items-center justify-center rounded-full bg-brand text-white shadow group-hover:flex"
-                          title="Remove field"
+                          className="absolute -end-3 -top-3 hidden h-6 w-6 items-center justify-center rounded-full bg-brand text-white shadow group-hover:flex"
+                          title={t("Remove field")}
                         >
                           <Icon name="x" size={14} />
                         </button>
@@ -146,11 +149,11 @@ export default function FormsEditor({ tool, items, submit, error, setError }: Ed
       sidebar={
         <div className="space-y-6">
           <div>
-            <p className="mb-2 text-sm font-semibold">Create fields</p>
+            <p className="mb-2 text-sm font-semibold">{t("Create fields")}</p>
             <button className="btn-secondary w-full" onClick={detect} disabled={detecting}>
-              <Icon name="sparkles" size={18} /> {detecting ? "Detecting…" : "Detect form fields automatically"}
+              <Icon name="sparkles" size={18} /> {detecting ? t("Detecting…") : t("Detect form fields automatically")}
             </button>
-            <p className="mt-3 mb-2 text-xs text-muted">Or pick a field type and drag on the page:</p>
+            <p className="mt-3 mb-2 text-xs text-muted">{t("Or pick a field type and drag on the page:")}</p>
             <div className="grid grid-cols-2 gap-2">
               {(["text", "checkbox"] as const).map((m) => (
                 <button
@@ -158,7 +161,7 @@ export default function FormsEditor({ tool, items, submit, error, setError }: Ed
                   onClick={() => setMode(m)}
                   className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium ${mode === m ? "border-brand bg-brand/5 text-brand" : "border-line"}`}
                 >
-                  <Icon name={m === "text" ? "forms" : "checkbox"} size={16} /> {m === "text" ? "Text field" : "Checkbox"}
+                  <Icon name={m === "text" ? "forms" : "checkbox"} size={16} /> {m === "text" ? t("Text field") : t("Checkbox")}
                 </button>
               ))}
             </div>
@@ -171,7 +174,7 @@ export default function FormsEditor({ tool, items, submit, error, setError }: Ed
                       className="input !py-1 text-sm"
                       value={f.name}
                       onChange={(e) => setCreated((all) => all.map((x) => (x.id === f.id ? { ...x, name: e.target.value } : x)))}
-                      aria-label="Field name"
+                      aria-label={t("Field name")}
                     />
                   </div>
                 ))}
@@ -180,9 +183,9 @@ export default function FormsEditor({ tool, items, submit, error, setError }: Ed
           </div>
 
           <div>
-            <p className="mb-2 text-sm font-semibold">Fill existing fields</p>
+            <p className="mb-2 text-sm font-semibold">{t("Fill existing fields")}</p>
             {existing.length === 0 ? (
-              <p className="text-xs text-muted">This PDF has no fillable fields yet.</p>
+              <p className="text-xs text-muted">{t("This PDF has no fillable fields yet.")}</p>
             ) : (
               <div className="space-y-3">
                 {existing.map((f) => (
@@ -211,7 +214,7 @@ export default function FormsEditor({ tool, items, submit, error, setError }: Ed
 
           <label className="flex items-center gap-2 text-sm font-medium">
             <input type="checkbox" className="h-4 w-4 accent-[var(--brand)]" checked={flatten} onChange={(e) => setFlatten(e.target.checked)} />
-            Flatten form (make fields non-editable)
+            {t("Flatten form (make fields non-editable)")}
           </label>
         </div>
       }

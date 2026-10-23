@@ -2,6 +2,7 @@
 
 import { Caveat, Dancing_Script, Great_Vibes } from "next/font/google";
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/i18n/client";
 import { Icon } from "../Icon";
 
 // Only the signature modal uses these, so they must not be preloaded on every page.
@@ -51,6 +52,7 @@ export function SignatureModal({
   onDone: (sig: SignatureImage) => void;
   onClose: () => void;
 }) {
+  const t = useT();
   const [tab, setTab] = useState<"type" | "draw" | "upload">("type");
   const [text, setText] = useState(defaultText);
   const [font, setFont] = useState(0);
@@ -80,7 +82,7 @@ export function SignatureModal({
 
   async function finish(canvas: HTMLCanvasElement) {
     const trimmed = trimCanvas(canvas);
-    if (!trimmed) return setError("Your signature is empty.");
+    if (!trimmed) return setError(t("Your signature is empty."));
     const blob = await toPng(trimmed);
     onDone({ blob, url: URL.createObjectURL(blob), width: trimmed.width, height: trimmed.height });
   }
@@ -88,11 +90,11 @@ export function SignatureModal({
   async function apply() {
     setError(null);
     if (tab === "draw") {
-      if (!pad.current || !hasInk.current) return setError("Draw your signature in the box.");
+      if (!pad.current || !hasInk.current) return setError(t("Draw your signature in the box."));
       return finish(pad.current);
     }
     if (tab === "type") {
-      if (!text.trim()) return setError("Type your name.");
+      if (!text.trim()) return setError(t("Type your name."));
       const family = getComputedStyle(document.querySelector(`.${FONTS[font].className}`) ?? document.body).fontFamily;
       await document.fonts.load(`96px ${family}`);
       const c = document.createElement("canvas");
@@ -110,7 +112,7 @@ export function SignatureModal({
 
   async function upload(file: File | undefined) {
     if (!file) return;
-    if (!/image\/(png|jpe?g)/.test(file.type)) return setError("Use a PNG or JPG image.");
+    if (!/image\/(png|jpe?g)/.test(file.type)) return setError(t("Use a PNG or JPG image."));
     const bmp = await createImageBitmap(file);
     const c = document.createElement("canvas");
     c.width = bmp.width;
@@ -125,23 +127,23 @@ export function SignatureModal({
       <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-line px-6 py-4">
           <h2 className="text-lg font-bold">{title}</h2>
-          <button onClick={onClose} aria-label="Close"><Icon name="x" size={22} /></button>
+          <button onClick={onClose} aria-label={t("Close")}><Icon name="x" size={22} /></button>
         </div>
         <div className="flex gap-1 border-b border-line px-4">
-          {(["type", "draw", "upload"] as const).map((t) => (
-            <button key={t} onClick={() => setTab(t)} className={`border-b-2 px-4 py-3 text-sm font-semibold capitalize ${tab === t ? "border-brand text-brand" : "border-transparent text-muted"}`}>
-              {t}
+          {([["type", "Type"], ["draw", "Draw"], ["upload", "Upload"]] as const).map(([id, label]) => (
+            <button key={id} onClick={() => setTab(id)} className={`border-b-2 px-4 py-3 text-sm font-semibold ${tab === id ? "border-brand text-brand" : "border-transparent text-muted"}`}>
+              {t(label)}
             </button>
           ))}
         </div>
         <div className="p-6">
           {tab === "type" && (
             <>
-              <input className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Your name" autoFocus />
+              <input className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder={t("Your name")} autoFocus />
               <div className="mt-4 grid gap-2">
                 {FONTS.map((f, i) => (
-                  <button key={i} onClick={() => setFont(i)} className={`${f.className} rounded-lg border px-4 py-2 text-left text-3xl ${font === i ? "border-brand bg-brand/5" : "border-line"}`} style={{ color: ink }}>
-                    {text || "Your name"}
+                  <button key={i} onClick={() => setFont(i)} className={`${f.className} rounded-lg border px-4 py-2 text-start text-3xl ${font === i ? "border-brand bg-brand/5" : "border-line"}`} style={{ color: ink }}>
+                    {text || t("Your name")}
                   </button>
                 ))}
               </div>
@@ -178,20 +180,20 @@ export function SignatureModal({
                   hasInk.current = false;
                 }}
               >
-                Clear
+                {t("Clear")}
               </button>
             </div>
           )}
           {tab === "upload" && (
             <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-line text-muted hover:border-brand">
               <Icon name="upload" size={32} />
-              Upload an image of your signature (PNG or JPG)
+              {t("Upload an image of your signature (PNG or JPG)")}
               <input type="file" accept="image/png,image/jpeg" hidden onChange={(e) => upload(e.target.files?.[0])} />
             </label>
           )}
           {tab !== "upload" && (
             <div className="mt-4 flex items-center gap-2">
-              <span className="text-sm text-muted">Color</span>
+              <span className="text-sm text-muted">{t("Color")}</span>
               {INK.map((c) => (
                 <button key={c} onClick={() => setInk(c)} aria-label={c} className={`h-6 w-6 rounded-full ${ink === c ? "ring-2 ring-brand ring-offset-2" : ""}`} style={{ background: c }} />
               ))}
@@ -201,8 +203,8 @@ export function SignatureModal({
         </div>
         {tab !== "upload" && (
           <div className="flex justify-end gap-2 border-t border-line px-6 py-4">
-            <button className="btn-secondary" onClick={onClose}>Cancel</button>
-            <button className="btn-primary" onClick={apply}>Apply</button>
+            <button className="btn-secondary" onClick={onClose}>{t("Cancel")}</button>
+            <button className="btn-primary" onClick={apply}>{t("Apply")}</button>
           </div>
         )}
       </div>

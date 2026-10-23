@@ -16,7 +16,7 @@ const names = [
   "edit", "photo-down", "photo-up", "signature", "droplet-half-2", "rotate-clockwise",
   "world-www", "lock-open", "lock", "layout-grid", "archive", "tool", "list-numbers",
   "scan", "text-recognition", "git-compare", "eye-off", "crop", "forms", "sparkles",
-  "language", "markdown", "route",
+  "language", "markdown", "route", "file-minus", "file-symlink",
   // ui
   "upload", "brand-google-drive", "brand-dropbox", "x", "plus", "trash", "download",
   "chevron-down", "chevron-right", "grid-dots", "menu-2", "user", "logout", "check",
@@ -29,6 +29,12 @@ const names = [
   "settings", "copy", "grip-vertical", "search", "player-play", "file-plus", "eye",
   "clock", "heart", "bolt", "cloud-off", "users", "help-circle", "news", "speakerphone",
   "letter-case", "refresh", "device-floppy", "player-stop", "adjustments", "filter",
+  // accounts, admin, signing, developers, languages
+  "key", "webhook", "code", "layout-dashboard", "send", "bell", "history", "certificate",
+  "template", "world", "user-x", "mail-check", "chart-bar", "database", "alert-circle",
+  "inbox", "plug", "cloud-upload", "list-check", "external-link", "user-check", "users-group",
+  "arrow-up", "arrow-down", "lock-check", "file-certificate", "player-skip-forward", "dots",
+  "toggle-right", "brand-zapier", "circle-check", "progress", "terminal-2", "receipt",
 ];
 
 const subset = getIcons(tabler, names);

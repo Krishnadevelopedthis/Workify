@@ -30,10 +30,13 @@ COPY --chown=node:node py/requirements.txt py/requirements.txt
 RUN python3 -m venv py/.venv \
  && py/.venv/bin/pip install --no-cache-dir --timeout 120 --retries 10 -r py/requirements.txt
 
-# Node dependencies (postinstall copies the pdf.js worker into public/).
+# Node dependencies (postinstall copies the pdf.js worker into public/). The npm
+# cache survives between builds, so a retry after a network failure only fetches
+# what is still missing.
 COPY --chown=node:node package.json package-lock.json ./
 COPY --chown=node:node scripts ./scripts
-RUN npm ci --no-audit --no-fund --fetch-retries=6 --fetch-retry-maxtimeout=120000 --fetch-timeout=600000
+RUN --mount=type=cache,target=/home/node/.npm,uid=1000,gid=1000 \
+    npm ci --prefer-offline --no-audit --no-fund --fetch-retries=6 --fetch-retry-maxtimeout=120000 --fetch-timeout=600000
 
 # Public values are baked into the build; pass them with --build-arg.
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
@@ -64,7 +67,7 @@ VOLUME ["/app/data"]
 
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s \
-  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/session').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # Hosted disks (Render, Railway, Fly) are often mounted owned by root. Start as
 # root only to hand /app/data to the "node" user, then run the app as "node".

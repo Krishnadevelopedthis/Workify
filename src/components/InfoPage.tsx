@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/Link";
 import type { ReactNode } from "react";
 import { Icon } from "./Icon";
 
@@ -49,7 +49,7 @@ export function Cta({ title, text, href, label }: { title: string; text: string;
       <h2 className="text-2xl font-bold">{title}</h2>
       <p className="mx-auto mt-2 max-w-xl text-white/90">{text}</p>
       <Link href={href} className="mt-6 inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 font-semibold text-brand">
-        {label} <Icon name="arrow-right" size={18} />
+        {label} <Icon name="arrow-right" size={18} className="rtl:rotate-180" />
       </Link>
     </div>
   );

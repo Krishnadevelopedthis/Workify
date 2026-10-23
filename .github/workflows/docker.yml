@@ -21,27 +21,55 @@ jobs:
 
       - name: Start container
         run: |
-          docker run -d --name workify -p 3000:3000 workify:ci
+          set -euo pipefail
+          docker run -d --name workify -p 3000:3000 -e WORKIFY_SECRET=ci-smoke-test-secret workify:ci
           for i in $(seq 1 60); do
-            curl -sf http://localhost:3000/api/session >/dev/null && break
+            curl -sf http://localhost:3000/api/health >/dev/null && break
             sleep 2
           done
+          curl -sf -o /dev/null http://localhost:3000/api/health || { echo "The app did not start."; exit 1; }
           curl -sf -o /dev/null -w "home page: HTTP %{http_code}\n" http://localhost:3000/
+
+      - name: Health check reports every engine
+        run: |
+          set -euo pipefail
+          health=$(curl -sf "http://localhost:3000/api/health?engines=1")
+          echo "health -> $health"
+          jq -e '.status == "ok" and .database == true and (.engines | length > 0) and ([.engines[]] | all)' <<<"$health" >/dev/null
 
       - name: Smoke test every engine
         run: |
-          set -e
+          set -euo pipefail
+          base=http://localhost:3000
           # Sample inputs made with tools inside the image.
           docker exec workify gs -q -sDEVICE=pdfwrite -o /tmp/a.pdf -c "/Helvetica findfont 24 scalefont setfont 72 700 moveto (Workify smoke test) show showpage"
+          docker exec workify gs -q -sDEVICE=pdfwrite -o /tmp/three.pdf -c "/p { /Helvetica findfont 24 scalefont setfont 72 700 moveto show showpage } def (Page one) p (Page two) p (Page three) p"
           docker cp workify:/tmp/a.pdf a.pdf
+          docker exec workify gs -q -sDEVICE=pdfimage24 -r200 -o /tmp/scan.pdf /tmp/a.pdf # image only, like a scan
+          docker cp workify:/tmp/three.pdf three.pdf
+          docker cp workify:/tmp/scan.pdf scan.pdf
           printf 'Hello from a document.\n' > note.txt
 
-          check() { # name, then curl -F args; fails the job on any error response
+          check() { # name, then curl -F args; fails the job on any error response. Leaves the JSON reply in $reply.
             name=$1; shift
-            body=$(curl -s -w '\n%{http_code}' -X POST "http://localhost:3000/api/process/$name" "$@")
-            code=$(echo "$body" | tail -1)
-            echo "$name -> HTTP $code $(echo "$body" | head -1 | cut -c1-160)"
+            body=$(curl -s -w '\n%{http_code}' -X POST "$base/api/process/$name" "$@")
+            code=${body##*$'\n'}
+            reply=${body%$'\n'*}
+            echo "$name -> HTTP $code ${reply:0:160}"
             [ "$code" = "200" ]
+          }
+          expect_text() { # the last result is an Office file of this extension containing the sample's (recognized) text
+            jq -e --arg ext "$1" '.fileName | ascii_downcase | endswith($ext)' <<<"$reply" >/dev/null || { echo "expected a $1 file"; exit 1; }
+            curl -sf -o "result$1" "$base$(jq -r .downloadUrl <<<"$reply")"
+            unzip -p "result$1" > result.unzipped
+            grep -aqi 'smoke' result.unzipped || { echo "the recognized text is missing"; exit 1; }
+          }
+          expect_pages() { # the last result's page count
+            curl -sf -o result.pdf "$base$(jq -r .downloadUrl <<<"$reply")"
+            docker cp result.pdf workify:/tmp/result.pdf
+            n=$(docker exec workify qpdf --show-npages /tmp/result.pdf)
+            echo "  $n page(s)"
+            [ "$n" = "$1" ] || { echo "expected $1 page(s)"; exit 1; }
           }
           check merge-pdf -F files=@a.pdf -F files=@a.pdf -F 'options={}'
           check compress-pdf -F files=@a.pdf -F 'options={"level":"recommended"}'
@@ -51,6 +79,64 @@ jobs:
           check word-to-pdf -F files=@note.txt -F 'options={}'
           check ocr-pdf -F files=@a.pdf -F 'options={"language":"hin+eng"}'
           check pdf-to-pdfa -F files=@a.pdf -F 'options={"conformance":"2"}'
+
+          check remove-pages -F files=@three.pdf -F 'options={"pages":"2"}'
+          expect_pages 2
+          check extract-pages -F files=@three.pdf -F 'options={"pages":"1, 3","separate":false}'
+          expect_pages 2
+
+          # Office conversions of scanned documents (OCR first).
+          check pdf-to-word -F files=@scan.pdf -F 'options={"ocr":true,"language":"eng"}'
+          expect_text .docx
+          check pdf-to-excel -F files=@scan.pdf -F 'options={"ocr":true,"language":"eng"}'
+          expect_text .xlsx
+          check pdf-to-powerpoint -F files=@scan.pdf -F 'options={"ocr":true,"language":"eng"}'
+          expect_text .pptx
+
+      - name: Smoke test the developer API
+        run: |
+          set -euo pipefail
+          for auth in "" "Authorization: Bearer wfy_notarealkeynotarealkey"; do
+            for path in me tools; do
+              body=$(curl -s -w '\n%{http_code}' ${auth:+-H "$auth"} "http://localhost:3000/api/v1/$path")
+              code=${body##*$'\n'}
+              reply=${body%$'\n'*}
+              echo "/api/v1/$path ${auth:+(bad key) }-> HTTP $code $reply"
+              [ "$code" = "401" ]
+              jq -e '.error.status == 401 and (.error.message | length > 0)' <<<"$reply" >/dev/null
+            done
+          done
+
+      - name: Smoke test a signature request with two signers
+        run: |
+          set -euo pipefail
+          base=http://localhost:3000
+          # Anonymous request without emails: the links are shared by hand, so no SMTP is needed.
+          created=$(curl -sf -X POST "$base/api/sign-requests" -F file=@a.pdf \
+            -F 'signers=[{"name":"Ann Signer"},{"name":"Bob Signer"}]' -F 'senderName=CI smoke test')
+          echo "created -> $created"
+          manage=$(jq -r '.manageLink | sub("^/sign/manage/"; "")' <<<"$created")
+          tokens=$(jq -r '.signers[].link | sub("^/sign/"; "")' <<<"$created")
+          [ "$(wc -l <<<"$tokens")" = "2" ] || { echo "expected 2 signer links"; exit 1; }
+
+          for token in $tokens; do
+            curl -sf -o /dev/null -w "signer document -> HTTP %{http_code} %{content_type}\n" "$base/api/sign/$token/file"
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$base/api/sign/$token/file?final=1")
+            echo "final copy before everyone signed -> HTTP $code"
+            [ "$code" = "409" ]
+            reply=$(curl -sf -X POST "$base/api/sign/$token" -F action=sign \
+              -F 'overlays=[{"kind":"text","page":1,"x":72,"y":120,"text":"Signed in CI","size":14,"color":"#000000","font":"Helvetica"}]')
+            echo "sign -> $reply"
+            jq -e '.ok == true' <<<"$reply" >/dev/null
+          done
+
+          last=$(tail -1 <<<"$tokens")
+          curl -sf -o signed.pdf "$base/api/sign/$last/file?final=1"
+          curl -sf -o owner.pdf "$base/api/sign-manage/$manage?which=final"
+          head -c 5 signed.pdf | grep -q '%PDF-' || { echo "the completed document is not a PDF"; exit 1; }
+          cmp -s signed.pdf owner.pdf || { echo "signer and owner downloads differ"; exit 1; }
+          grep -aq '/ByteRange' signed.pdf || { echo "the completed document is not sealed"; exit 1; }
+          echo "completed PDF: $(wc -c < signed.pdf) bytes, sealed"
 
       - name: Container logs
         if: always()

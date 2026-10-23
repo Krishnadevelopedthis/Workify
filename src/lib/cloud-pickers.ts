@@ -78,24 +78,66 @@ type GooglePickerBuilder = {
   build: () => { setVisible: (v: boolean) => void };
 };
 
-/** Opens the Google Drive Picker with the narrow drive.file scope (only picked files). */
-export async function pickFromGoogleDrive(multiple: boolean, mimeTypes: string): Promise<File[]> {
+type GoogleWindow = { gapi: { load: (n: string, cb: () => void) => void }; google: GoogleNs };
+
+/** Loads Google's scripts and asks for a token with the narrow drive.file scope (only files Workify opens or creates). */
+async function googleToken(withPicker: boolean): Promise<{ google: GoogleNs; token: string }> {
   await Promise.all([
-    loadScript("https://apis.google.com/js/api.js"),
+    withPicker ? loadScript("https://apis.google.com/js/api.js") : null,
     loadScript("https://accounts.google.com/gsi/client"),
   ]);
-  const w = window as unknown as { gapi: { load: (n: string, cb: () => void) => void }; google: GoogleNs };
-  await new Promise<void>((r) => w.gapi.load("picker", r));
+  const w = window as unknown as GoogleWindow;
+  if (withPicker) await new Promise<void>((r) => w.gapi.load("picker", r));
   const google = w.google;
-
   const token = await new Promise<string>((resolve, reject) => {
     const client = google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID!,
       scope: "https://www.googleapis.com/auth/drive.file",
-      callback: (r) => (r.access_token ? resolve(r.access_token) : reject(new Error(r.error ?? "Google sign-in failed"))),
+      callback: (r) => (r.access_token ? resolve(r.access_token) : reject(new Error("Google sign-in failed."))),
     });
     client.requestAccessToken();
   });
+  return { google, token };
+}
+
+/** Uploads a result file to the user's Google Drive. Resolves with a link to it. */
+export async function saveToGoogleDrive(file: Blob, name: string): Promise<string | null> {
+  const { token } = await googleToken(false);
+  const body = new FormData();
+  body.append("metadata", new Blob([JSON.stringify({ name })], { type: "application/json" }));
+  body.append("file", file, name);
+  const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body,
+  });
+  if (!res.ok) throw new Error("Could not save the file to Google Drive.");
+  return ((await res.json()) as { webViewLink?: string }).webViewLink ?? null;
+}
+
+type DropboxSaver = {
+  save: (url: string, name: string, o: { success: () => void; cancel: () => void; error: (e: string) => void }) => void;
+};
+
+/**
+ * Opens the Dropbox Saver. Dropbox downloads the file from `absoluteUrl`
+ * itself, so this works only when the site is reachable from the internet.
+ */
+export async function saveToDropbox(absoluteUrl: string, name: string): Promise<boolean> {
+  await loadScript("https://www.dropbox.com/static/api/2/dropins.js", { id: "dropboxjs", "data-app-key": DROPBOX_APP_KEY! });
+  const Dropbox = (window as unknown as { Dropbox: DropboxSaver }).Dropbox;
+  return new Promise((resolve, reject) =>
+    Dropbox.save(absoluteUrl, name, {
+      success: () => resolve(true),
+      cancel: () => resolve(false),
+      error: () => reject(new Error("Could not save the file to Dropbox.")),
+    }),
+  );
+}
+
+/** Opens the Google Drive Picker with the narrow drive.file scope (only picked files). */
+export async function pickFromGoogleDrive(multiple: boolean, mimeTypes: string): Promise<File[]> {
+  const { google, token } = await googleToken(true);
 
   const docs = await new Promise<{ id: string; name: string }[]>((resolve) => {
     const view = new google.picker.DocsView(google.picker.ViewId.DOCS);
@@ -118,7 +160,7 @@ export async function pickFromGoogleDrive(multiple: boolean, mimeTypes: string):
       const res = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(d.id)}?alt=media`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error(`Could not download ${d.name} from Google Drive`);
+      if (!res.ok) throw new Error("Could not download the file from Google Drive.");
       return new File([await res.blob()], d.name);
     }),
   );

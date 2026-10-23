@@ -1,6 +1,7 @@
 # Production on a VPS: Workify behind Caddy (automatic HTTPS).
 # 1. Point your domain's DNS A record at the server.
-# 2. Set DOMAIN below (or in a .env file next to this file).
+# 2. Copy .env.example to .env next to this file and set DOMAIN (plus email,
+#    admin and secret settings; see DEPLOY.md).
 # 3. docker compose up -d --build
 services:
   app:
@@ -8,9 +9,31 @@ services:
       context: .
       args:
         NEXT_PUBLIC_SITE_URL: https://${DOMAIN:?set DOMAIN, e.g. workify.example.com}
+        # Optional Google Drive / Dropbox buttons (CLOUD_SETUP.md); rebuild after changing.
+        NEXT_PUBLIC_GOOGLE_API_KEY: ${NEXT_PUBLIC_GOOGLE_API_KEY:-}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_GOOGLE_APP_ID: ${NEXT_PUBLIC_GOOGLE_APP_ID:-}
+        NEXT_PUBLIC_DROPBOX_APP_KEY: ${NEXT_PUBLIC_DROPBOX_APP_KEY:-}
     restart: unless-stopped
     environment:
       WORKIFY_TRUST_PROXY: "1" # Caddy is the one proxy in front of the app
+      # Read from .env; empty means "use the default" (DEPLOY.md lists them all).
+      WORKIFY_SECRET: ${WORKIFY_SECRET:-}
+      WORKIFY_ADMIN_EMAILS: ${WORKIFY_ADMIN_EMAILS:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      WORKIFY_SIGN_P12: ${WORKIFY_SIGN_P12:-} # a path inside /app/data, e.g. /app/data/certs/seal.p12
+      WORKIFY_SIGN_P12_PASSWORD: ${WORKIFY_SIGN_P12_PASSWORD:-}
+      WORKIFY_BACKUP_KEEP: ${WORKIFY_BACKUP_KEEP:-14}
+      WORKIFY_MAX_JOBS: ${WORKIFY_MAX_JOBS:-4}
+      WORKIFY_MAX_QUEUE: ${WORKIFY_MAX_QUEUE:-20}
+      WORKIFY_PY_WORKERS: ${WORKIFY_PY_WORKERS:-2}
+    # Database, signature files, signing certificate, secret.key and daily
+    # backups (data/backups). Copy it off the server too: see DEPLOY.md.
     volumes:
       - workify-data:/app/data
     # Not published to the internet: only Caddy can reach it.

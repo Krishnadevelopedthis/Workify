@@ -9,3 +9,15 @@ npm-debug.log*
 public/pdf.worker.min.mjs
 *.tsbuildinfo
 next-env.d.ts
+coverage
+*.p12
+*.pfx
+*.key
+*.pem
+*.crt
+*.db
+*.sqlite*
+*.log
+.vscode
+.idea
+.github

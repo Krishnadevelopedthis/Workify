@@ -53,6 +53,10 @@ export const LIMITS = {
   signRequest: { perClient: 20, global: 300, windowMs: 60 * 60_000 },
   auth: { perClient: 20, global: 500, windowMs: 15 * 60_000 },
   contact: { perClient: 5, global: 100, windowMs: 60 * 60_000 },
+  /** Actions that send an email to an address the user typed. */
+  email: { perClient: 10, global: 300, windowMs: 60 * 60_000 },
+  /** Developer API calls, keyed by API key. */
+  api: { perClient: 120, global: 2000, windowMs: 10 * 60_000 },
 } satisfies Record<string, LimitRule>;
 
 /** Checks both layers. Returns an error message when the request must be refused. */

@@ -5,6 +5,7 @@ import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@d
 import { CSS } from "@dnd-kit/utilities";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useT } from "@/i18n/client";
 import { openPdf } from "@/lib/pdf-client";
 import { Icon } from "../../Icon";
 import { Workspace } from "../GenericWorkspace";
@@ -34,6 +35,7 @@ function PageThumb({
   onDelete: () => void;
   onInsertBlank: () => void;
 }) {
+  const t = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   return (
     <div
@@ -43,33 +45,33 @@ function PageThumb({
     >
       <div {...attributes} {...listeners} className="flex h-48 w-full cursor-grab items-center justify-center overflow-hidden active:cursor-grabbing">
         {"blank" in item ? (
-          <div className="flex h-44 w-32 items-center justify-center border border-dashed border-line bg-white text-xs text-muted">Blank page</div>
+          <div className="flex h-44 w-32 items-center justify-center border border-dashed border-line bg-white text-xs text-muted">{t("Blank page")}</div>
         ) : doc ? (
           <LazyVisible height={170} className="flex w-full items-center justify-center">
             <PdfPage doc={doc} pageNumber={item.page} width={120} rotation={item.rotate} />
           </LazyVisible>
         ) : (
-          <span className="text-xs text-muted">Loading…</span>
+          <span className="text-xs text-muted">{t("Loading…")}</span>
         )}
       </div>
       <div className="mt-1 flex w-full items-center justify-between px-1 text-xs">
         <span className="font-semibold">{index + 1}</span>
-        <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} title="Source file" />
+        <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} title={t("Source file")} />
       </div>
-      <div className="absolute top-1 right-1 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
+      <div className="absolute end-1 top-1 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
         {!("blank" in item) && (
-          <button onClick={onRotate} className="rounded-full bg-white p-1.5 shadow hover:text-brand" title="Rotate">
+          <button onClick={onRotate} className="rounded-full bg-white p-1.5 shadow hover:text-brand" title={t("Rotate")}>
             <Icon name="rotate-clockwise" size={15} />
           </button>
         )}
-        <button onClick={onDelete} className="rounded-full bg-white p-1.5 shadow hover:text-brand" title="Delete page">
+        <button onClick={onDelete} className="rounded-full bg-white p-1.5 shadow hover:text-brand" title={t("Delete page")}>
           <Icon name="trash" size={15} />
         </button>
       </div>
       <button
         onClick={onInsertBlank}
-        className="absolute top-1/2 -right-4 z-10 hidden h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white shadow group-hover:flex"
-        title="Insert blank page after"
+        className="absolute -end-4 top-1/2 z-10 hidden h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white shadow group-hover:flex"
+        title={t("Insert blank page after")}
       >
         <Icon name="plus" size={16} />
       </button>
@@ -80,6 +82,7 @@ function PageThumb({
 const FILE_COLORS = ["#e5322d", "#2d7ff9", "#6aa84f", "#f1b800", "#8e44ad", "#ff7a1a"];
 
 export default function OrganizeEditor({ tool, items, addFiles, submit, error, setError }: EditorProps) {
+  const t = useT();
   const [docs, setDocs] = useState<Record<string, PDFDocumentProxy>>({});
   const [pages, setPages] = useState<PageItem[]>([]);
   const picker = useFilePicker(tool, addFiles);
@@ -104,9 +107,9 @@ export default function OrganizeEditor({ tool, items, addFiles, submit, error, s
             ...Array.from({ length: d.numPages }, (_, i) => ({ id: uid(), fileId: it.id, page: i + 1, rotate: 0 })),
           ]);
         })
-        .catch(() => setError(`"${it.file.name}" could not be opened. Is it password protected?`));
+        .catch(() => setError(t('"{file}" could not be opened. Is it password protected?', { file: it.file.name })));
     }
-  }, [items, setError]);
+  }, [items, setError, t]);
 
   const colorOf = useMemo(
     () => Object.fromEntries(items.map((it, i) => [it.id, FILE_COLORS[i % FILE_COLORS.length]])),
@@ -119,7 +122,7 @@ export default function OrganizeEditor({ tool, items, addFiles, submit, error, s
   };
 
   function go() {
-    if (!pages.length) return setError("Your document has no pages left. Add at least one page.");
+    if (!pages.length) return setError(t("Your document has no pages left. Add at least one page."));
     const fileIndex = Object.fromEntries(items.map((it, i) => [it.id, i]));
     submit(
       items.map((i) => i.file),
@@ -170,7 +173,7 @@ export default function OrganizeEditor({ tool, items, addFiles, submit, error, s
       sidebar={
         <div className="space-y-4">
           <p className="rounded-lg bg-bg p-4 text-sm text-muted">
-            Drag pages to reorder them. Hover a page to rotate or delete it, or use the + to insert a blank page.
+            {t("Drag pages to reorder them. Hover a page to rotate or delete it, or use the + to insert a blank page.")}
           </p>
           <div className="space-y-1.5">
             {items.map((it) => (
@@ -181,13 +184,13 @@ export default function OrganizeEditor({ tool, items, addFiles, submit, error, s
             ))}
           </div>
           <button className="btn-secondary w-full" onClick={picker.open}>
-            <Icon name="file-plus" size={18} /> Add PDF file
+            <Icon name="file-plus" size={18} /> {t("Add PDF file")}
           </button>
           <button className="btn-secondary w-full" onClick={() => setPages((cur) => [...cur, { id: uid(), blank: true }])}>
-            <Icon name="plus" size={18} /> Add blank page
+            <Icon name="plus" size={18} /> {t("Add blank page")}
           </button>
-          <button className="w-full text-sm font-medium text-brand underline" onClick={reset}>Reset all</button>
-          <p className="text-center text-sm text-muted">{pages.length} pages</p>
+          <button className="w-full text-sm font-medium text-brand underline" onClick={reset}>{t("Reset all")}</button>
+          <p className="text-center text-sm text-muted">{t("{n} pages", { n: pages.length })}</p>
         </div>
       }
     />

@@ -2,6 +2,8 @@
 
 import type { PageViewport } from "pdfjs-dist";
 import { useState, type ReactNode } from "react";
+import { useLang, useT } from "@/i18n/client";
+import { LOCALE_TAGS } from "@/i18n/config";
 import { Icon } from "../Icon";
 import { PageNav } from "./DrawLayer";
 import { Workspace } from "./GenericWorkspace";
@@ -27,6 +29,7 @@ export function SignWorkspace({
   error,
   setError,
   sidebarTop,
+  defaultName = "",
   onSubmit,
 }: {
   file: File;
@@ -35,12 +38,15 @@ export function SignWorkspace({
   error?: string;
   setError: (m: string) => void;
   sidebarTop?: ReactNode;
+  defaultName?: string;
   onSubmit: (overlays: ReturnType<typeof toOverlay>[], extras: Record<string, Blob>) => void;
 }) {
+  const t = useT();
+  const lang = useLang();
   const { doc, error: loadError, numPages } = usePdf(file);
   const [page, setPage] = useState(1);
   const [vp, setVp] = useState<PageViewport | null>(null);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(defaultName);
   const [sigs, setSigs] = useState<Partial<Record<"signature" | "initials" | "stamp", SignatureImage>>>({});
   const [modal, setModal] = useState<"signature" | "initials" | null>(null);
   const [placing, setPlacing] = useState<Placeable | null>(null);
@@ -82,7 +88,7 @@ export function SignWorkspace({
       setElements((a) => [...a, { id, page, kind: "image", x: x - w / 2, y: y - h / 2, w, h, image: placing, url: img.url }]);
     } else {
       const text =
-        placing === "date" ? new Date().toLocaleDateString() : placing === "name" ? name || "Your name" : "Text";
+        placing === "date" ? new Date().toLocaleDateString(LOCALE_TAGS[lang]) : placing === "name" ? name || t("Your name") : t("Text");
       setElements((a) => [...a, { id, page, kind: "text", x, y, text, size: 14, color: "#1b1b1f", font: "Helvetica", bold: false }]);
     }
     setSelected(id);
@@ -90,7 +96,7 @@ export function SignWorkspace({
   }
 
   function go() {
-    if (!elements.length) return setError("Place your signature on the document first.");
+    if (!elements.length) return setError(t("Place your signature on the document first."));
     const extras: Record<string, Blob> = {};
     for (const k of ["signature", "initials", "stamp"] as const) {
       if (sigs[k] && elements.some((e) => e.kind === "image" && e.image === k)) extras[k] = sigs[k]!.blob;
@@ -102,15 +108,15 @@ export function SignWorkspace({
     <>
       <Workspace
         title={title}
-        error={error ?? loadError ?? undefined}
+        error={error ?? (loadError ? t(loadError) : undefined)}
         action={action}
         onAction={go}
         main={
           <div ref={fitMeasure} className="flex flex-col items-center">
             {placing && (
               <p className="sticky top-2 z-20 mb-3 rounded-full bg-ink px-4 py-2 text-sm text-white shadow">
-                Click on the page where you want to place it ·{" "}
-                <button className="underline" onClick={() => setPlacing(null)}>Cancel</button>
+                {t("Click on the page where you want to place it")} ·{" "}
+                <button className="underline" onClick={() => setPlacing(null)}>{t("Cancel")}</button>
               </p>
             )}
             <PageNav page={page} total={numPages} onPage={(p) => { setPage(p); setSelected(null); }} />
@@ -137,11 +143,11 @@ export function SignWorkspace({
           <div className="space-y-5">
             {sidebarTop}
             <label className="block text-sm">
-              <span className="mb-1 block font-semibold">Full name</span>
-              <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" />
+              <span className="mb-1 block font-semibold">{t("Full name")}</span>
+              <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("Your full name")} />
             </label>
             <div>
-              <p className="mb-2 text-sm font-semibold">Fields</p>
+              <p className="mb-2 text-sm font-semibold">{t("Fields")}</p>
               <div className="grid gap-2">
                 {FIELDS.map((f) => {
                   const img = f.id === "signature" || f.id === "initials" || f.id === "stamp" ? sigs[f.id] : undefined;
@@ -149,15 +155,15 @@ export function SignWorkspace({
                     <div key={f.id} className="flex items-center gap-2">
                       <button
                         onClick={() => choose(f.id)}
-                        className={`flex flex-1 items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm font-medium ${placing === f.id ? "border-brand bg-brand/5" : "border-line hover:border-ink/30"}`}
+                        className={`flex flex-1 items-center gap-3 rounded-lg border px-3 py-2 text-start text-sm font-medium ${placing === f.id ? "border-brand bg-brand/5" : "border-line hover:border-ink/30"}`}
                       >
                         <Icon name={f.icon} size={18} className="text-brand" />
-                        <span className="flex-1">{f.label}</span>
+                        <span className="flex-1">{t(f.label)}</span>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         {img && <img src={img.url} alt="" className="h-6 max-w-20 object-contain" />}
                       </button>
                       {(f.id === "signature" || f.id === "initials") && sigs[f.id] && (
-                        <button onClick={() => setModal(f.id as "signature" | "initials")} className="rounded-lg border border-line p-2 hover:border-ink/30" title="Change">
+                        <button onClick={() => setModal(f.id as "signature" | "initials")} className="rounded-lg border border-line p-2 hover:border-ink/30" title={t("Change")}>
                           <Icon name="pencil" size={16} />
                         </button>
                       )}
@@ -168,13 +174,13 @@ export function SignWorkspace({
             </div>
             {sel?.kind === "text" && (
               <label className="block text-sm">
-                <span className="mb-1 block font-semibold">Selected text</span>
+                <span className="mb-1 block font-semibold">{t("Selected text")}</span>
                 <input className="input" value={sel.text} onChange={(e) => update({ ...sel, text: e.target.value })} />
               </label>
             )}
             {sel && (
               <button className="btn-secondary w-full !text-brand" onClick={() => { setElements((a) => a.filter((x) => x.id !== sel.id)); setSelected(null); }}>
-                <Icon name="trash" size={18} /> Remove selected
+                <Icon name="trash" size={18} /> {t("Remove selected")}
               </button>
             )}
           </div>
@@ -182,7 +188,7 @@ export function SignWorkspace({
       />
       {modal && (
         <SignatureModal
-          title={modal === "signature" ? "Create your signature" : "Create your initials"}
+          title={modal === "signature" ? t("Create your signature") : t("Create your initials")}
           defaultText={modal === "signature" ? name : name.split(/\s+/).map((w) => w[0] ?? "").join("").toUpperCase()}
           onClose={() => setModal(null)}
           onDone={(img) => {

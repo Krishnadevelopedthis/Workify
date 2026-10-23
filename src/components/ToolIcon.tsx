@@ -11,7 +11,7 @@ export function ToolIcon({ tool, size = 44 }: { tool: Pick<Tool, "icon" | "color
       <Icon name={tool.icon} size={size * 0.58} />
       {tool.badge && (
         <span
-          className="absolute -right-1.5 -bottom-1.5 flex items-center justify-center rounded-md border-2 border-white font-bold"
+          className="absolute -end-1.5 -bottom-1.5 flex items-center justify-center rounded-md border-2 border-white font-bold"
           style={{ width: size * 0.48, height: size * 0.48, fontSize: size * 0.26, background: tool.color }}
         >
           {tool.badge}

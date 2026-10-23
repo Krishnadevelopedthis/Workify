@@ -1,8 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
-import { useCallback, useEffect, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useMemo, useState, type ComponentType } from "react";
+import { useT } from "@/i18n/client";
+import { Link } from "@/i18n/Link";
+import { localizeTool } from "@/i18n/tools";
 import { clearHandOff, peekHandOff } from "@/lib/handoff";
 import { TOOL_BY_SLUG, type Tool } from "@/lib/tools";
 import { Icon } from "../Icon";
@@ -17,6 +19,7 @@ import { useProcess } from "./useProcess";
 export type Submit = (files: File[], options: Record<string, unknown>, extras?: Record<string, Blob>) => void;
 
 export type EditorProps = {
+  /** The tool with every text already in the visitor's language. */
   tool: Tool;
   items: FileItem[];
   setItems: (items: FileItem[]) => void;
@@ -26,11 +29,13 @@ export type EditorProps = {
   setError: (msg: string) => void;
 };
 
+function EditorLoading() {
+  const t = useT();
+  return <p className="p-10 text-center text-muted">{t("Loading editor…")}</p>;
+}
+
 const load = (importer: () => Promise<{ default: ComponentType<EditorProps> }>) =>
-  dynamic<EditorProps>(importer, {
-    ssr: false,
-    loading: () => <p className="p-10 text-center text-muted">Loading editor…</p>,
-  });
+  dynamic<EditorProps>(importer, { ssr: false, loading: EditorLoading });
 
 const EDITORS: Record<NonNullable<Tool["editor"]>, ComponentType<EditorProps>> = {
   organize: load(() => import("./editors/OrganizeEditor")),
@@ -43,6 +48,7 @@ const EDITORS: Record<NonNullable<Tool["editor"]>, ComponentType<EditorProps>> =
   compare: load(() => import("./editors/CompareEditor")),
   scan: load(() => import("./editors/ScanEditor")),
   html: load(() => import("./editors/HtmlEditor")),
+  pages: load(() => import("./editors/PagesEditor")),
   workflow: load(() => import("./editors/WorkflowEditor")),
 };
 
@@ -60,6 +66,7 @@ export function ErrorBanner({ message }: { message?: string }) {
 }
 
 function Unavailable({ tool }: { tool: Tool }) {
+  const t = useT();
   return (
     <section className="flex flex-1 flex-col items-center px-4 pt-16 pb-24 text-center">
       <ToolIcon tool={tool} size={64} />
@@ -67,17 +74,18 @@ function Unavailable({ tool }: { tool: Tool }) {
       <p className="mt-3 max-w-xl text-lg text-muted">{tool.subtitle}</p>
       <div className="mt-8 flex items-center gap-3 rounded-xl border border-line bg-white px-6 py-4">
         <Icon name="cloud-off" size={26} className="text-muted" />
-        <p className="text-left font-medium">{tool.unavailable}</p>
+        <p className="text-start font-medium">{tool.unavailable}</p>
       </div>
       <Link href="/" className="btn-secondary mt-8">
-        <Icon name="arrow-left" size={18} /> Explore other tools
+        <Icon name="arrow-left" size={18} className="rtl:rotate-180" /> {t("Explore other tools")}
       </Link>
     </section>
   );
 }
 
 export function ToolRunner({ slug }: { slug: string }) {
-  const tool = TOOL_BY_SLUG.get(slug)!;
+  const t = useT();
+  const tool = useMemo(() => localizeTool(TOOL_BY_SLUG.get(slug)!, t), [slug, t]);
   // Start with any file passed from the previous tool's "Continue to…" buttons.
   const [items, setItems] = useState<FileItem[]>(() => {
     const handed = (peekHandOff() ?? []).filter((f) => acceptsFile(tool, f));
@@ -89,11 +97,11 @@ export function ToolRunner({ slug }: { slug: string }) {
   const addFiles = useCallback(
     (files: File[]) => {
       const ok = files.filter((f) => acceptsFile(tool, f));
-      if (ok.length < files.length) setError(`Some files were skipped. This tool accepts ${tool.acceptLabel}.`);
+      if (ok.length < files.length) setError(t("Some files were skipped. This tool accepts {kind}.", { kind: tool.acceptLabel }));
       if (!ok.length) return;
       setItems((prev) => (tool.multiple ? [...prev, ...toItems(ok)] : toItems(ok.slice(0, 1))));
     },
-    [tool, setError],
+    [tool, setError, t],
   );
 
   if (tool.unavailable) return <Unavailable tool={tool} />;

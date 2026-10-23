@@ -38,10 +38,13 @@ if [ "$mem_mb" -lt 3500 ] && ! swapon --show | grep -q .; then
 fi
 
 echo "==> 4/4 Building and starting Workify for https://$DOMAIN (first build: 20-40 min)"
-echo "DOMAIN=$DOMAIN" > .env
+# Keep other settings already in .env (SMTP_*, WORKIFY_ADMIN_EMAILS, ...); see .env.example.
+touch .env && chmod 600 .env
+sed -i '/^DOMAIN=/d' .env && echo "DOMAIN=$DOMAIN" >> .env
 sudo docker compose up -d --build
 
 echo
 echo "Done. Open https://$DOMAIN in a minute (Caddy is getting the HTTPS certificate)."
 echo "Logs:    sudo docker compose logs -f app"
 echo "Update:  git pull && sudo docker compose up -d --build"
+echo "Next:    add email and admin settings to .env (see DEPLOY.md), then: sudo docker compose up -d"

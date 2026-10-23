@@ -53,7 +53,7 @@ export const engines = {
   get tessdata() {
     const candidates = [
       process.env.WORKIFY_TESSDATA,
-      path.join(process.cwd(), "data", "tessdata"),
+      path.join(/* turbopackIgnore: true */ process.cwd(), "data", "tessdata"),
       path.join(PF, "Tesseract-OCR", "tessdata"),
       ...versionedDirs("/usr/share/tesseract-ocr", "").map((d) => path.join(d, "tessdata")),
       "/usr/share/tessdata",
@@ -63,8 +63,8 @@ export const engines = {
   },
   get python() {
     return locate("WORKIFY_PYTHON", () => [
-      path.join(process.cwd(), "py", ".venv", "Scripts", "python.exe"),
-      path.join(process.cwd(), "py", ".venv", "bin", "python"),
+      path.join(/* turbopackIgnore: true */ process.cwd(), "py", ".venv", "Scripts", "python.exe"),
+      path.join(/* turbopackIgnore: true */ process.cwd(), "py", ".venv", "bin", "python"),
     ]);
   },
 };
@@ -77,7 +77,18 @@ export function need(name: keyof typeof engines): string {
   return p;
 }
 
-export class ToolError extends Error {}
+/**
+ * A problem the user can fix, shown to them as-is. The English `template`
+ * (with {placeholders}) is also the translation key; `vars` fill it in.
+ */
+export class ToolError extends Error {
+  constructor(
+    readonly template: string,
+    readonly vars?: Record<string, string | number>,
+  ) {
+    super(vars ? template.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m)) : template);
+  }
+}
 
 export function run(
   file: string,

@@ -96,7 +96,9 @@ def _number(value):
         return text
 
 
-def pdf_to_pptx(src, dst):
+def pdf_to_pptx(src, dst, scanned=frozenset()):
+    """`scanned` holds 0-based pages whose text came from OCR: their full-page
+    scan image is left out, so the slide shows the editable text instead."""
     import io
 
     import pymupdf
@@ -112,18 +114,21 @@ def pdf_to_pptx(src, dst):
     blank = prs.slide_layouts[6]
     pt = lambda v: Emu(int(v * 12700))  # PDF points -> EMU
 
-    for page in doc:
+    for pno, page in enumerate(doc):
         slide = prs.slides.add_slide(blank)
+        page_area = page.rect.width * page.rect.height
         # Images first so text boxes sit on top of them.
         for info in page.get_image_info(xrefs=True):
             xref = info.get("xref")
             if not xref:
                 continue
+            x0, y0, x1, y1 = info["bbox"]
+            if pno in scanned and (x1 - x0) * (y1 - y0) > 0.6 * page_area:
+                continue
             try:
                 pix = pymupdf.Pixmap(doc, xref)
                 if pix.n - pix.alpha >= 4:
                     pix = pymupdf.Pixmap(pymupdf.csRGB, pix)
-                x0, y0, x1, y1 = info["bbox"]
                 slide.shapes.add_picture(io.BytesIO(pix.tobytes("png")), pt(x0), pt(y0), pt(x1 - x0), pt(y1 - y0))
             except Exception:
                 continue
@@ -142,10 +147,75 @@ def pdf_to_pptx(src, dst):
                     run.font.size = Pt(max(span["size"], 1))
                     run.font.bold = bool(span["flags"] & 16)
                     run.font.italic = bool(span["flags"] & 2)
-                    c = span["color"]
+                    c = 0 if pno in scanned else span["color"]  # OCR text is invisible in the PDF
                     run.font.color.rgb = RGBColor((c >> 16) & 255, (c >> 8) & 255, c & 255)
     prs.save(dst)
     out(ok=True)
+
+
+def _ocr_layer(src, dst, lang):
+    """Adds an OCR text layer to the pages that have no text. Returns the PDF to
+    convert and the 0-based pages that were recognized (empty: nothing to do)."""
+    import ocrmypdf
+
+    doc = open_pdf(src)
+    scanned = frozenset(i for i, page in enumerate(doc) if not page.get_text().strip())
+    doc.close()
+    if not scanned:
+        return src, scanned
+    layered = dst + ".ocr.pdf"
+    try:
+        ocrmypdf.ocr(src, layered, language=lang, skip_text=True, output_type="pdf", progress_bar=False, optimize=0)
+    except ocrmypdf.exceptions.MissingDependencyError as e:
+        fail(f"OCR engine missing: {e}")
+    return layered, scanned
+
+
+def _text_docx(src, dst):
+    """A Word document built from the text blocks of each page (one page per section)."""
+    import pymupdf
+    from docx import Document
+    from docx.shared import Pt
+
+    doc = pymupdf.open(src)
+    word = Document()
+    for pno, page in enumerate(doc):
+        if pno:
+            word.add_page_break()
+        for block in page.get_text("dict")["blocks"]:
+            if block.get("type") != 0:
+                continue
+            lines = [" ".join(s["text"] for s in line["spans"]).strip() for line in block["lines"]]
+            text = "\n".join(line for line in lines if line)
+            if not text:
+                continue
+            size = max((s["size"] for line in block["lines"] for s in line["spans"]), default=11)
+            word.add_paragraph().add_run(text).font.size = Pt(min(max(round(size), 8), 36))
+    word.save(dst)
+
+
+def ocr_convert(kind, src, dst, lang):
+    """PDF -> docx/pptx/xlsx for scanned documents: OCR first, then convert."""
+    path, scanned = _ocr_layer(src, dst, lang)
+    try:
+        if kind == "docx":
+            if scanned:
+                _text_docx(path, dst)
+            else:
+                pdf_to_docx(src, dst)
+        elif kind == "pptx":
+            pdf_to_pptx(path, dst, scanned)
+        elif kind == "xlsx":
+            pdf_to_xlsx(path, dst)
+        else:
+            fail(f"Unknown output type: {kind}")
+    finally:
+        if path != src:
+            try:
+                os.remove(path)
+            except OSError:
+                pass  # still open on Windows; the job folder is deleted later anyway
+    out(ok=True, recognized=len(scanned))
 
 
 def pdf_to_md(src, dst):
@@ -285,6 +355,7 @@ COMMANDS = {
     "pdf2xlsx": (pdf_to_xlsx, 2),
     "pdf2pptx": (pdf_to_pptx, 2),
     "pdf2md": (pdf_to_md, 2),
+    "ocr-convert": (ocr_convert, 4),
     "pdf2jpg": (pdf_to_jpg, 4),
     "extract-images": (extract_images, 3),
     "redact": (redact, 3),
