@@ -24,4 +24,4 @@ jobs:
       - run: npx tsc --noEmit
       - run: npx eslint src
       - run: npm run build
-      - run: npm audit --omit=dev --audit-level=high
+      - run: node scripts/audit.mjs

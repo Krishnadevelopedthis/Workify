@@ -2,7 +2,9 @@
 # Build:  docker build -t workify --build-arg NEXT_PUBLIC_SITE_URL=https://your-domain .
 # Run:    docker run -p 3000:3000 -v workify-data:/app/data workify
 
-FROM node:24-bookworm-slim
+# Debian 13 (trixie): its Ghostscript 10.05 works with ocrmypdf. Bookworm ships
+# 10.0.0, which ocrmypdf refuses because it corrupts PDFs that contain text.
+FROM node:24-trixie-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 # PDF engines, OCR languages, office suite, headless browser and fonts.
