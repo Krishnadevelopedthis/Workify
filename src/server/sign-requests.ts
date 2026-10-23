@@ -145,11 +145,11 @@ export function requestsForUser(userId: number, limit = 100): RequestSummary[] {
 /** The newest file: the sealed final PDF, else the PDF with the signatures so far. */
 export function documentPath(r: SignRequest, which: "current" | "final") {
   const dir = requestDir(r.id)!;
-  if (which === "final") {
-    for (const name of ["final.pdf", "signed.pdf"]) if (existsSync(path.join(dir, name))) return path.join(dir, name);
-    return null;
+  const names = which === "final" ? ["final.pdf", "signed.pdf"] : ["current.pdf", "original.pdf"];
+  for (const name of names) {
+    const file = path.join(/* turbopackIgnore: true */ dir, name);
+    if (existsSync(file)) return file;
   }
-  for (const name of ["current.pdf", "original.pdf"]) if (existsSync(path.join(dir, name))) return path.join(dir, name);
   return null;
 }
 

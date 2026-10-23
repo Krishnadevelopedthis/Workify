@@ -237,18 +237,26 @@ const MIGRATIONS: ((db: DatabaseSync) => void)[] = [
 function open() {
   mkdirSync(DATA_DIR, { recursive: true });
   const db = new DatabaseSync(path.join(DATA_DIR, "workify.db"));
+  // Wait for locks before anything else: `next build` opens the database from
+  // several workers at once, and switching to WAL needs a lock too.
+  db.exec("PRAGMA busy_timeout = 15000;");
   db.exec(`
     PRAGMA journal_mode = WAL;
     PRAGMA synchronous = NORMAL;
-    PRAGMA busy_timeout = 5000;
     PRAGMA foreign_keys = ON;
   `);
-  let version = (db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
-  // Databases created before migrations existed already have schema 1.
-  if (version === 0 && db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'users'").get()) version = 1;
-  for (; version < MIGRATIONS.length; version++) {
-    db.exec("BEGIN");
+  // Each step takes the write lock first, then reads the version, so two
+  // processes starting together never run the same migration twice.
+  for (;;) {
+    db.exec("BEGIN IMMEDIATE");
     try {
+      let version = (db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
+      // Databases created before migrations existed already have schema 1.
+      if (version === 0 && db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'users'").get()) version = 1;
+      if (version >= MIGRATIONS.length) {
+        db.exec("COMMIT");
+        return db;
+      }
       MIGRATIONS[version](db);
       db.exec(`PRAGMA user_version = ${version + 1}`);
       db.exec("COMMIT");
@@ -257,7 +265,6 @@ function open() {
       throw e;
     }
   }
-  return db;
 }
 
 // SQLite runs in-process: one shared connection (WAL mode) is the right
