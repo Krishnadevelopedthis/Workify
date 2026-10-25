@@ -3,7 +3,7 @@ import { LOCALE_TAGS } from "@/i18n/config";
 import { getT } from "@/i18n/server";
 import { requireAdmin } from "@/server/admin";
 import { db } from "@/server/db";
-import { smtpConfigured } from "@/server/mail";
+import { isRedacted, outboxPreview, smtpConfigured } from "@/server/mail";
 import { ActionButton } from "../ActionButton";
 import { AdminTitle, fmtDate, Table, Td } from "../ui";
 
@@ -45,7 +45,7 @@ export default async function AdminEmails({ searchParams }: PageProps<"/[lang]/a
             <Td>
               <details>
                 <summary className="cursor-pointer">{r.subject}</summary>
-                <pre className="mt-2 max-w-xl text-xs whitespace-pre-wrap text-muted">{r.text}</pre>
+                <pre className="mt-2 max-w-xl text-xs whitespace-pre-wrap text-muted">{outboxPreview(r)}</pre>
               </details>
               {r.error && <p className="mt-1 text-xs text-brand">{r.error}</p>}
             </Td>
@@ -54,7 +54,7 @@ export default async function AdminEmails({ searchParams }: PageProps<"/[lang]/a
               {r.attempts > 1 && <span className="ms-1 text-xs text-muted">×{r.attempts}</span>}
             </Td>
             <Td>{fmtDate(r.created_at, LOCALE_TAGS[lang])}</Td>
-            <Td>{r.status !== "sent" && <ActionButton action={resendEmail.bind(null, r.id)}>{t("Send again")}</ActionButton>}</Td>
+            <Td>{r.status !== "sent" && !isRedacted(r) && <ActionButton action={resendEmail.bind(null, r.id)}>{t("Send again")}</ActionButton>}</Td>
           </tr>
         ))}
       </Table>

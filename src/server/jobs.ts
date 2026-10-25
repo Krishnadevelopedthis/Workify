@@ -1,8 +1,12 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { createWriteStream } from "node:fs";
+import { mkdir, readdir, rm, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import type { ReadableStream as WebReadableStream } from "node:stream/web";
 
 export const JOBS_ROOT = path.join(os.tmpdir(), "workify-jobs");
 const MAX_AGE_MS = 60 * 60 * 1000; // results are deleted after one hour
@@ -16,7 +20,8 @@ const ID_RE = /^[0-9a-f-]{36}$/;
 /** Strips anything that could escape a folder or break a filename. */
 export function safeName(name: string) {
   const base = path.basename(name).replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_").trim();
-  return base.slice(-150) || "file";
+  // slice() counts UTF-16 code units: drop a low surrogate cut off from its pair.
+  return base.slice(-150).replace(/^[\uDC00-\uDFFF]/, "") || "file";
 }
 
 export async function createJob(): Promise<Job> {
@@ -34,7 +39,8 @@ export async function saveUpload(job: Job, file: File, index: number): Promise<J
   const name = safeName(file.name);
   // Prefix with the index so two uploads with the same name never collide.
   const p = path.join(job.inDir, `${String(index).padStart(3, "0")}_${name}`);
-  await writeFile(p, Buffer.from(await file.arrayBuffer()));
+  // Streamed to disk: no second in-memory copy of the (up to 200 MB) upload.
+  await pipeline(Readable.fromWeb(file.stream() as WebReadableStream<Uint8Array>), createWriteStream(p));
   return { path: p, name };
 }
 

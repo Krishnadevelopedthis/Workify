@@ -31,6 +31,55 @@ def fail(message):
     raise ToolFailure(message)
 
 
+# A pixmap costs width * height * n bytes, and a few hundred bytes of PDF can
+# declare a page or an image of billions of pixels, so every decode is budgeted.
+MAX_RENDER_PIXELS = 50_000_000  # one rendered page: 150 MB as RGB
+MAX_IMAGE_PIXELS = 100_000_000  # one embedded image: a 600 dpi A3 scan is ~70 MP
+
+
+def _key_int(doc, xref, key):
+    kind, value = doc.xref_get_key(xref, key)
+    if kind == "xref":  # e.g. /Width 12 0 R
+        value = doc.xref_object(int(value.split()[0]), compressed=True)
+    try:
+        return int(float(value))
+    except ValueError:
+        return 0
+
+
+def _jpx_size(doc, xref):
+    """JPX images are decoded at the size in their codestream, not /Width /Height."""
+    import struct
+
+    data = doc.xref_stream_raw(xref) or b""
+    at = data.find(b"\xff\x4f\xff\x51")  # SOC + SIZ marker
+    if at < 0 or len(data) < at + 24:
+        return 0
+    x, y, x0, y0 = struct.unpack(">4I", data[at + 8 : at + 24])
+    return max(x - x0, 0) * max(y - y0, 0)
+
+
+def _image_pixels(doc, xref):
+    """Pixels MuPDF would allocate to decode image `xref` (or its soft mask)."""
+    worst = 0
+    kind, smask = doc.xref_get_key(xref, "SMask")
+    for x in (xref, int(smask.split()[0]) if kind == "xref" else 0):
+        if x <= 0 or x >= doc.xref_length():
+            continue
+        px = _key_int(doc, x, "Width") * _key_int(doc, x, "Height")
+        if "JPXDecode" in doc.xref_get_key(x, "Filter")[1]:
+            px = max(px, _jpx_size(doc, x))
+        worst = max(worst, px)
+    return worst
+
+
+def _check_page_images(doc, page):
+    # Rendering or listing a page decodes its images, so refuse oversized ones up front.
+    for img in page.get_images(full=True):
+        if _image_pixels(doc, img[0]) > MAX_IMAGE_PIXELS:
+            fail(f"Page {page.number + 1} contains an image that is too large to process.")
+
+
 def open_pdf(path):
     import pymupdf
 
@@ -115,6 +164,7 @@ def pdf_to_pptx(src, dst, scanned=frozenset()):
     pt = lambda v: Emu(int(v * 12700))  # PDF points -> EMU
 
     for pno, page in enumerate(doc):
+        _check_page_images(doc, page)
         slide = prs.slides.add_slide(blank)
         page_area = page.rect.width * page.rect.height
         # Images first so text boxes sit on top of them.
@@ -132,7 +182,7 @@ def pdf_to_pptx(src, dst, scanned=frozenset()):
                 slide.shapes.add_picture(io.BytesIO(pix.tobytes("png")), pt(x0), pt(y0), pt(x1 - x0), pt(y1 - y0))
             except Exception:
                 continue
-        for block in page.get_text("dict")["blocks"]:
+        for block in page.get_text("dict", flags=pymupdf.TEXTFLAGS_DICT & ~pymupdf.TEXT_PRESERVE_IMAGES)["blocks"]:
             if block.get("type") != 0:
                 continue
             x0, y0, x1, y1 = block["bbox"]
@@ -182,7 +232,7 @@ def _text_docx(src, dst):
     for pno, page in enumerate(doc):
         if pno:
             word.add_page_break()
-        for block in page.get_text("dict")["blocks"]:
+        for block in page.get_text("dict", flags=pymupdf.TEXTFLAGS_DICT & ~pymupdf.TEXT_PRESERVE_IMAGES)["blocks"]:
             if block.get("type") != 0:
                 continue
             lines = [" ".join(s["text"] for s in line["spans"]).strip() for line in block["lines"]]
@@ -229,10 +279,17 @@ def pdf_to_md(src, dst):
 
 
 def pdf_to_jpg(src, out_dir, dpi, stem):
+    import pymupdf
+
     doc = open_pdf(src)
     files = []
     for i, page in enumerate(doc, start=1):
-        pix = page.get_pixmap(dpi=int(dpi))
+        _check_page_images(doc, page)
+        zoom = int(dpi) / 72
+        px = page.rect.width * zoom * page.rect.height * zoom
+        if px > MAX_RENDER_PIXELS:
+            zoom *= (MAX_RENDER_PIXELS / px) ** 0.5  # huge page: lower the dpi to fit
+        pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
         name = f"{stem}-{i:03d}.jpg"
         pix.save(os.path.join(out_dir, name), jpg_quality=90)
         files.append(name)
@@ -250,6 +307,8 @@ def extract_images(src, out_dir, stem):
             if xref in seen:
                 continue
             seen.add(xref)
+            if _image_pixels(doc, xref) > MAX_IMAGE_PIXELS:
+                continue  # would decode to gigabytes
             pix = pymupdf.Pixmap(doc, xref)
             if pix.n - pix.alpha >= 4 or pix.alpha:
                 pix = pymupdf.Pixmap(pymupdf.csRGB, pix) if pix.n - pix.alpha >= 4 else pymupdf.Pixmap(pix, 0)
@@ -385,6 +444,34 @@ def run(cmd, args):
         return {"error": f"{type(e).__name__}: {e}"}
 
 
+def limit_memory():
+    """Backstop for decodes the checks above cannot see (third-party converters,
+    images in patterns or annotations): past this much extra address space an
+    allocation raises MemoryError in this worker instead of waking the OOM killer."""
+    try:
+        import resource
+    except ImportError:
+        return  # Windows has no rlimits
+    try:
+        budget = int(os.environ.get("WORKIFY_PY_MEMORY_MB") or 1536) * 2**20
+    except ValueError:
+        budget = 1536 * 2**20
+    if budget <= 0:
+        return
+    try:
+        # Relative to what the imports already mapped, much of it reserved, not used.
+        with open("/proc/self/statm") as f:
+            base = int(f.read().split()[0]) * os.sysconf("SC_PAGE_SIZE")
+    except (OSError, ValueError):
+        base = 0
+    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+    limit = base + budget
+    if hard != resource.RLIM_INFINITY:
+        limit = min(limit, hard)
+    if soft == resource.RLIM_INFINITY or limit < soft:
+        resource.setrlimit(resource.RLIMIT_AS, (limit, hard))
+
+
 def serve():
     # Keep a private handle on the real stdout for protocol replies, then point
     # fd 1 at stderr so library prints (even from C code) cannot corrupt it.
@@ -397,6 +484,7 @@ def serve():
             __import__(mod)
         except Exception:
             pass
+    limit_memory()
     proto.write(json.dumps({"ready": True}) + "\n")
     for line in sys.stdin:
         try:

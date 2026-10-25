@@ -3,18 +3,26 @@ import { readFile } from "node:fs/promises";
 import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
 import { ToolError } from "./engines";
 
+/** Far beyond real documents; a tiny file with thousands of page objects otherwise drives memory and run time up. */
+export const MAX_PDF_PAGES = 10_000;
+
 export async function loadPdf(filePath: string, name: string) {
   const bytes = await readFile(filePath);
+  let doc: PDFDocument;
   try {
-    const doc = await PDFDocument.load(bytes, { updateMetadata: false });
+    doc = await PDFDocument.load(bytes, { updateMetadata: false });
     doc.getPageCount(); // a "%PDF-" header with junk after it only fails here
-    return doc;
   } catch (e) {
     if (String(e).includes("encrypted")) {
       throw new ToolError('"{file}" is password protected. Unlock it first with Unlock PDF.', { file: name });
     }
     throw new ToolError('"{file}" is not a valid PDF or is damaged. Try Repair PDF first.', { file: name });
   }
+  const pages = doc.getPageCount();
+  if (pages > MAX_PDF_PAGES) {
+    throw new ToolError('"{file}" has {pages} pages. Workify can process PDFs of up to {max} pages.', { file: name, pages, max: MAX_PDF_PAGES });
+  }
+  return doc;
 }
 
 export function hexToRgb(hex: string) {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Icon } from "@/components/Icon";
 import { InfoPage } from "@/components/InfoPage";
+import { GlowBorder } from "@/components/ui/GlowBorder";
 import { Link } from "@/i18n/Link";
 import { alternates } from "@/i18n/seo";
 import { getT } from "@/i18n/server";
@@ -59,18 +60,20 @@ export default async function PricingPage() {
           <Link href="/" className="btn-primary mt-8">{t("Start now")}</Link>
         </div>
 
-        <div className="relative flex flex-col overflow-hidden rounded-2xl border border-line bg-white p-7">
-          <span className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full bg-accent/15 px-3 py-1 text-xs font-bold text-accent">
-            <Icon name="clock" size={14} /> {t("Coming soon")}
-          </span>
-          <h2 className="flex items-center gap-2 text-xl font-bold">
-            <Icon name="crown" size={22} className="text-accent" /> {t("Premium")}
-          </h2>
-          <p className="mt-3 text-4xl font-extrabold text-muted">—</p>
-          <p className="mt-1 text-sm text-muted">{t("For heavy users and teams. Pricing will be announced at launch.")}</p>
-          <Features items={PREMIUM_FEATURES} t={t} />
-          <PremiumWaitlist />
-        </div>
+        <GlowBorder>
+          <div className="relative flex flex-1 flex-col overflow-hidden rounded-[calc(1rem-1.5px)] bg-white p-7">
+            <span className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full bg-accent/15 px-3 py-1 text-xs font-bold text-accent">
+              <Icon name="clock" size={14} /> {t("Coming soon")}
+            </span>
+            <h2 className="flex items-center gap-2 text-xl font-bold">
+              <Icon name="crown" size={22} className="text-accent" /> {t("Premium")}
+            </h2>
+            <p className="mt-3 text-4xl font-extrabold text-muted">—</p>
+            <p className="mt-1 text-sm text-muted">{t("For heavy users and teams. Pricing will be announced at launch.")}</p>
+            <Features items={PREMIUM_FEATURES} t={t} />
+            <PremiumWaitlist />
+          </div>
+        </GlowBorder>
 
         <div className="flex flex-col rounded-2xl border border-line bg-white p-7">
           <h2 className="mt-9 text-xl font-bold">{t("Business")}</h2>

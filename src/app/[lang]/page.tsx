@@ -66,7 +66,7 @@ export default async function Home() {
               <h2 className="mt-4 text-xl font-bold">{t(p.title)}</h2>
               <p className="mt-2 text-muted">{t(p.text)}</p>
               <span className="mt-4 inline-flex items-center gap-1 font-semibold text-brand-dark">
-                {t("Learn more")} <Icon name="arrow-right" size={16} className="rtl:rotate-180" />
+                <span className="wf-underline">{t("Learn more")}</span> <Icon name="arrow-right" size={16} className="rtl:rotate-180" />
               </span>
             </Link>
           ))}

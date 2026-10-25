@@ -11,6 +11,7 @@ type Result = Record<string, unknown>;
 type Job = { cmd: string; args: string[]; timeoutMs: number; resolve: (r: Result) => void; reject: (e: Error) => void };
 
 const RECYCLE_AFTER = 100; // restart a worker after this many jobs to cap memory growth
+const GROUPS = process.platform !== "win32";
 const SCRIPT = path.join(/* turbopackIgnore: true */ process.cwd(), "py", "workify_tools.py");
 
 class Worker {
@@ -23,7 +24,9 @@ class Worker {
   dead = false;
 
   constructor(python: string, env: NodeJS.ProcessEnv) {
-    this.proc = spawn(python, ["-I", SCRIPT, "serve"], { env, windowsHide: true });
+    // Its own process group on Linux/macOS, so a timeout also kills what the
+    // worker started (ocrmypdf's tesseract and Ghostscript), not just Python.
+    this.proc = spawn(python, ["-I", SCRIPT, "serve"], { env, windowsHide: true, detached: GROUPS });
     this.proc.stderr.on("data", () => {}); // library chatter; drained so the pipe never blocks
     const lines = createInterface({ input: this.proc.stdout });
     let markReady!: () => void;
@@ -68,6 +71,14 @@ class Worker {
 
   kill() {
     this.dead = true;
+    if (GROUPS && this.proc.pid) {
+      try {
+        process.kill(-this.proc.pid, "SIGKILL");
+        return;
+      } catch {
+        // the group is already gone; fall through
+      }
+    }
     this.proc.kill();
   }
 }

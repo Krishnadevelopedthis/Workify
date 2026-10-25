@@ -2,7 +2,8 @@
 # 1. Point your domain's DNS A record at the server.
 # 2. Copy .env.example to .env next to this file and set DOMAIN (plus email,
 #    admin and secret settings; see DEPLOY.md).
-# 3. docker compose up -d --build
+# 3. docker compose pull caddy && docker compose build --pull && docker compose up -d
+#    (--pull also fetches the newest Node.js base image; use the same command to update.)
 services:
   app:
     build:
@@ -15,6 +16,15 @@ services:
         NEXT_PUBLIC_GOOGLE_APP_ID: ${NEXT_PUBLIC_GOOGLE_APP_ID:-}
         NEXT_PUBLIC_DROPBOX_APP_KEY: ${NEXT_PUBLIC_DROPBOX_APP_KEY:-}
     restart: unless-stopped
+    # Chromium (HTML to PDF) keeps its sandbox, which needs user namespaces.
+    # Docker's default seccomp profile blocks them; this profile is Docker's
+    # default plus clone/unshare/setns. Check it on the server with:
+    #   docker compose exec -u node app /usr/local/bin/workify-chromium --headless --dump-dom about:blank
+    # (Some hosts also restrict user namespaces with AppArmor: see DEPLOY.md.)
+    security_opt:
+      - seccomp=./deploy/chrome-seccomp.json
+    # Caps the whole container, so one huge conversion cannot take the server down.
+    mem_limit: ${WORKIFY_MEM_LIMIT:-3g}
     environment:
       WORKIFY_TRUST_PROXY: "1" # Caddy is the one proxy in front of the app
       # Read from .env; empty means "use the default" (DEPLOY.md lists them all).
@@ -31,7 +41,10 @@ services:
       WORKIFY_BACKUP_KEEP: ${WORKIFY_BACKUP_KEEP:-14}
       WORKIFY_MAX_JOBS: ${WORKIFY_MAX_JOBS:-4}
       WORKIFY_MAX_QUEUE: ${WORKIFY_MAX_QUEUE:-20}
+      WORKIFY_PROCESS_GLOBAL_LIMIT: ${WORKIFY_PROCESS_GLOBAL_LIMIT:-}
       WORKIFY_PY_WORKERS: ${WORKIFY_PY_WORKERS:-2}
+      WORKIFY_PY_MEMORY_MB: ${WORKIFY_PY_MEMORY_MB:-}
+      WORKIFY_UPLOAD_BUDGET_MB: ${WORKIFY_UPLOAD_BUDGET_MB:-}
     # Database, signature files, signing certificate, secret.key and daily
     # backups (data/backups). Copy it off the server too: see DEPLOY.md.
     volumes:
@@ -41,7 +54,8 @@ services:
       - "3000"
 
   caddy:
-    image: caddy:2.8
+    # Keep the TLS front end on a supported release (Dependabot raises PRs).
+    image: caddy:2.11.7
     restart: unless-stopped
     ports:
       - "80:80"

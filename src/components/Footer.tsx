@@ -72,7 +72,7 @@ export async function Footer() {
             <ul className="space-y-2">
               {links.map(([label, href]) => (
                 <li key={href}>
-                  <HoverLink href={href} className="text-sm hover:text-white">{t(label)}</HoverLink>
+                  <HoverLink href={href} className="wf-underline text-sm hover:text-white">{t(label)}</HoverLink>
                 </li>
               ))}
             </ul>

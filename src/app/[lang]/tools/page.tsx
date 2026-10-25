@@ -25,9 +25,9 @@ export default async function ToolsPage() {
                 const tool = TOOL_BY_SLUG.get(s)!;
                 return (
                   <li key={s}>
-                    <HoverLink href={`/${s}`} className="flex items-center gap-3 rounded-lg p-2 hover:bg-white">
+                    <HoverLink href={`/${s}`} className="group flex items-center gap-3 rounded-lg p-2 hover:bg-white">
                       <ToolIcon tool={tool} size={30} />
-                      <span className="font-medium">{t(tool.name)}</span>
+                      <span className="font-medium"><span className="wf-underline">{t(tool.name)}</span></span>
                     </HoverLink>
                   </li>
                 );

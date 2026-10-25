@@ -49,7 +49,9 @@ export class ApiError extends Error {
 /** The user behind the request's API key. Throws ApiError (401/429). */
 export function authenticate(request: Request): User {
   const header = request.headers.get("authorization") ?? "";
-  const key = /^Bearer\s+(wfy_[A-Za-z0-9_-]{20,80})$/.exec(header.trim())?.[1];
+  // The auth scheme is case-insensitive (RFC 7235 section 2.1); the key itself is not.
+  const token = /^bearer\s+(\S+)$/i.exec(header.trim())?.[1];
+  const key = token && /^wfy_[A-Za-z0-9_-]{20,80}$/.test(token) ? token : undefined;
   if (!key) throw new ApiError(401, "Send your API key as: Authorization: Bearer wfy_...");
   const row = db
     .prepare("SELECT id, user_id FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL")
@@ -101,7 +103,8 @@ export const taskJson = (t: ApiTask) => ({
 });
 
 /** Starts a task in the background; the result arrives by webhook or GET /api/v1/tasks/{id}. */
-export function startTask(user: User, input: TaskInput, webhookUrl: string | null): string {
+/** Runs the task in the background; `onFinish` runs once it has ended either way. */
+export function startTask(user: User, input: TaskInput, webhookUrl: string | null, onFinish?: () => void): string {
   const id = `task_${randomUUID().replaceAll("-", "")}`;
   db.prepare("INSERT INTO api_tasks (id, user_id, tool, status, webhook_url, created_at) VALUES (?, ?, ?, 'queued', ?, ?)").run(
     id,
@@ -120,6 +123,8 @@ export function startTask(user: User, input: TaskInput, webhookUrl: string | nul
       const message = e instanceof TaskError ? e.message : "Processing failed.";
       db.prepare("UPDATE api_tasks SET status = 'failed', error = ?, finished_at = ? WHERE id = ?").run(message, Date.now(), id);
       await dispatchWebhook(user.id, "task.failed", { task_id: id, tool: input.slug, error: message }, webhookUrl);
+    } finally {
+      onFinish?.();
     }
   })();
   return id;

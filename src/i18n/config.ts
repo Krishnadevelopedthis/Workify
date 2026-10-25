@@ -36,6 +36,9 @@ export const LOCALE_TAGS: Record<Locale, string> = {
 
 export const RTL_LOCALES: readonly Locale[] = ["ar"];
 
+/** Set by src/proxy.ts on page requests: the language in the URL (overwrites any client value). */
+export const PAGE_LANG_HEADER = "x-wf-page-lang";
+
 /** Remembers the visitor's language for server actions, API errors and emails. */
 export const LOCALE_COOKIE = "wf_lang";
 

@@ -3,35 +3,34 @@
 import { rm } from "node:fs/promises";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { localePath, splitLocale } from "@/i18n/config";
+import { localePath } from "@/i18n/config";
 import { requestT } from "@/i18n/request";
 import { currentUser, endSession, hashPassword, revokeSessions, startSession, verifyPassword } from "@/server/auth";
 import { db } from "@/server/db";
 import { sendAccountDeleted, sendEmailChange, sendPasswordChanged, sendResetEmail, sendVerifyEmail } from "@/server/emails";
-import { rateLimit } from "@/server/rate-limit";
+import { clientIp, rateLimit } from "@/server/rate-limit";
 import { requestDir } from "@/server/sign-requests";
-import { consumeToken, createToken } from "@/server/tokens";
+import { consumeToken, createToken, revokeTokens, TOKEN_TTL } from "@/server/tokens";
+import {
+  DAY,
+  HOUR,
+  LOGIN_FAILS_PER_CLIENT,
+  LOGIN_FAILS_PER_EMAIL,
+  LOGIN_WINDOW,
+  overLimit,
+  record,
+  RESET_EMAILS_PER_HOUR,
+  RESET_REUSE_MS,
+  safeNext,
+  TOO_MANY_ATTEMPTS,
+  unrecord,
+  VERIFY_RESENDS_PER_DAY,
+} from "./auth-guards";
 
 export type AuthState = { error?: string; ok?: boolean; values?: { name?: string; email?: string } };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_PASSWORD = 200; // scrypt work must stay bounded
-
-/**
- * Only allow redirects to a path on this site. Parsing as a URL catches tricks
- * like "//evil.com" and "/\evil.com", which browsers treat as other hosts.
- */
-function safeNext(raw: FormDataEntryValue | null) {
-  const next = String(raw ?? "/");
-  try {
-    const base = "http://workify.invalid";
-    const url = new URL(next, base);
-    if (url.origin !== base || !next.startsWith("/")) return "/";
-    return splitLocale(url.pathname)[1] + url.search + url.hash;
-  } catch {
-    return "/";
-  }
-}
 
 // A real hash of a random password, so failed logins for unknown emails take
 // as long as for known ones and do not reveal which emails are registered.
@@ -74,10 +73,21 @@ export async function login(_prev: AuthState, form: FormData): Promise<AuthState
   const { t, lang } = await requestT();
   const email = String(form.get("email") ?? "").trim().toLowerCase().slice(0, 254);
   const password = String(form.get("password") ?? "").slice(0, MAX_PASSWORD);
-  // Limited per client and per email, so guessing one account's password is slow
-  // even from many addresses.
-  const limited = rateLimit("auth", await headers(), `login:${email}`);
+  const h = await headers();
+  const limited = rateLimit("auth", h);
   if (limited) return { error: t(limited), values: { email } };
+  // Only failed attempts count. The strict limit is per (email, client), so
+  // someone else's wrong guesses cannot lock the owner out; the loose per-email
+  // ceiling still keeps guessing one account's password slow from many addresses.
+  const clientKey = `login:${email}:${clientIp(h)}`;
+  const emailKey = `login:${email}`;
+  if (overLimit(clientKey, LOGIN_FAILS_PER_CLIENT, LOGIN_WINDOW) || overLimit(emailKey, LOGIN_FAILS_PER_EMAIL, LOGIN_WINDOW)) {
+    return { error: t(TOO_MANY_ATTEMPTS), values: { email } };
+  }
+  // Counted before the (slow) password check so parallel guesses cannot slip
+  // past the limit, and taken back when the password is right.
+  record(clientKey);
+  record(emailKey);
 
   const row = db.prepare("SELECT id, password_hash, disabled_at FROM users WHERE email = ?").get(email) as
     | { id: number; password_hash: string; disabled_at: number | null }
@@ -85,6 +95,8 @@ export async function login(_prev: AuthState, form: FormData): Promise<AuthState
   const ok = await verifyPassword(password, row?.password_hash ?? (await getDummyHash()));
   // Same message either way, so the form does not reveal which emails exist.
   if (!row || !ok) return { error: t("Incorrect email or password."), values: { email } };
+  unrecord(clientKey);
+  unrecord(emailKey);
   if (row.disabled_at) return { error: t("This account has been suspended. Contact us if you think this is a mistake."), values: { email } };
   await startSession(row.id);
   redirect(localePath(lang, safeNext(form.get("next"))));
@@ -99,13 +111,25 @@ export async function logout() {
 export async function requestPasswordReset(_prev: AuthState, form: FormData): Promise<AuthState> {
   const { t, lang } = await requestT();
   const email = String(form.get("email") ?? "").trim().toLowerCase().slice(0, 254);
-  const limited = rateLimit("auth", await headers(), `reset:${email}`);
+  const limited = rateLimit("auth", await headers());
   if (limited) return { error: t(limited), values: { email } };
   if (!EMAIL_RE.test(email)) return { error: t("Please enter a valid email address."), values: { email } };
   const row = db.prepare("SELECT id, name FROM users WHERE email = ? AND disabled_at IS NULL").get(email) as
     | { id: number; name: string }
     | undefined;
-  if (row) await sendResetEmail(email, row.name, lang, createToken(row.id, "reset"));
+  // Each address gets a few reset emails per hour at most, and a link sent in
+  // the last few minutes is not replaced, so nobody can flood the inbox or keep
+  // the owner's link from working. Skipped silently, like an unknown address.
+  const key = `reset:${email}`;
+  const fresh =
+    row &&
+    db
+      .prepare("SELECT 1 FROM auth_tokens WHERE user_id = ? AND purpose = 'reset' AND expires_at > ?")
+      .get(row.id, Date.now() + TOKEN_TTL.reset - RESET_REUSE_MS);
+  if (row && !fresh && !overLimit(key, RESET_EMAILS_PER_HOUR, HOUR)) {
+    record(key);
+    await sendResetEmail(email, row.name, lang, createToken(row.id, "reset"));
+  }
   // The same answer whether or not the account exists.
   return { ok: true, values: { email } };
 }
@@ -126,6 +150,8 @@ export async function resetPassword(_prev: AuthState, form: FormData): Promise<A
     Date.now(),
     token.user_id,
   );
+  // Other reset, verify and email-change links sent before must not outlive the new password.
+  revokeTokens(token.user_id);
   revokeSessions(token.user_id);
   await startSession(token.user_id);
   redirect(localePath(lang, "/account?reset=1"));
@@ -146,6 +172,8 @@ export async function changePassword(_prev: AuthState, form: FormData): Promise<
   const row = db.prepare("SELECT password_hash FROM users WHERE id = ?").get(user.id) as { password_hash: string };
   if (!(await verifyPassword(current, row.password_hash))) return { error: t("Your current password is incorrect.") };
   db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(await hashPassword(next), user.id);
+  // A reset link someone requested earlier must not undo the new password.
+  revokeTokens(user.id);
   // Sign out every other device that knew the old password.
   revokeSessions(user.id);
   await startSession(user.id);
@@ -158,8 +186,11 @@ export async function resendVerification(): Promise<AuthState> {
   const user = await currentUser();
   if (!user) return { error: t("Please log in again.") };
   if (user.verified) return { ok: true };
-  const limited = rateLimit("email", await headers(), `verify:${user.id}`);
+  const key = `verify:${user.id}`;
+  if (overLimit(key, VERIFY_RESENDS_PER_DAY, DAY)) return { error: t(TOO_MANY_ATTEMPTS) };
+  const limited = rateLimit("email", await headers());
   if (limited) return { error: t(limited) };
+  record(key);
   await sendVerifyEmail(user.email, user.name, lang, createToken(user.id, "verify"));
   return { ok: true };
 }

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { DEFAULT_LOCALE, isLocale } from "./i18n/config";
+import { DEFAULT_LOCALE, isLocale, PAGE_LANG_HEADER } from "./i18n/config";
 
 // Every page lives under app/[lang]. English URLs carry no prefix, so they are
 // rewritten to /en/...; a visible /en/... is redirected to the clean URL.
@@ -11,11 +11,14 @@ export function proxy(request: NextRequest) {
     const clean = pathname.slice(DEFAULT_LOCALE.length + 1) || "/";
     return NextResponse.redirect(new URL(clean + search, request.url), 308);
   }
-  if (isLocale(first)) return NextResponse.next();
+  // The page's language, for app/global-not-found.tsx (which gets no params).
+  const headers = new Headers(request.headers);
+  headers.set(PAGE_LANG_HEADER, isLocale(first) ? first : DEFAULT_LOCALE);
+  if (isLocale(first)) return NextResponse.next({ request: { headers } });
 
   const url = request.nextUrl.clone();
   url.pathname = `/${DEFAULT_LOCALE}${pathname === "/" ? "" : pathname}`;
-  return NextResponse.rewrite(url);
+  return NextResponse.rewrite(url, { request: { headers } });
 }
 
 export const config = {

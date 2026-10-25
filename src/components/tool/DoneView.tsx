@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useLocalePath, useT } from "@/i18n/client";
+import { useLang, useLocalePath, useT } from "@/i18n/client";
+import { LOCALE_TAGS } from "@/i18n/config";
 import { Link } from "@/i18n/Link";
 import { dropboxEnabled, googleEnabled, saveToDropbox, saveToGoogleDrive } from "@/lib/cloud-pickers";
 import { handOff } from "@/lib/handoff";
@@ -10,6 +11,7 @@ import { formatBytes } from "@/lib/pdf-client";
 import { TOOL_BY_SLUG, type Tool } from "@/lib/tools";
 import { Icon } from "../Icon";
 import { ToolIcon } from "../ToolIcon";
+import { useCountUp } from "./countUp";
 import type { ProcessResult } from "./useProcess";
 
 const DONE_TITLES: Record<string, string> = {
@@ -42,6 +44,7 @@ const NEXT_TOOLS = [
 export function DoneView({ tool, result, onBack }: { tool: Tool; result: ProcessResult; onBack: () => void }) {
   const t = useT();
   const lp = useLocalePath();
+  const lang = useLang();
   const router = useRouter();
   const [deleted, setDeleted] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -63,6 +66,8 @@ export function DoneView({ tool, result, onBack }: { tool: Tool; result: Process
   const smaller = tool.slug === "compress-pdf" && result.inputSize > 0
     ? Math.max(0, Math.round((1 - result.size / result.inputSize) * 100))
     : null;
+  const animated = useCountUp(smaller ?? 0);
+  const fmt = new Intl.NumberFormat(LOCALE_TAGS[lang]).format;
 
   async function remove() {
     setBusy("delete");
@@ -110,7 +115,8 @@ export function DoneView({ tool, result, onBack }: { tool: Tool; result: Process
       <h1 className="text-3xl font-bold sm:text-4xl">{title}</h1>
       {smaller !== null && (
         <p className="mt-3 text-lg text-muted">
-          {t("Your PDF is now {pct}% smaller", { pct: smaller })} · {formatBytes(result.inputSize)} → {formatBytes(result.size)}
+          <span aria-hidden="true">{t("Your PDF is now {pct}% smaller", { pct: fmt(animated) })}</span>
+          <span className="sr-only">{t("Your PDF is now {pct}% smaller", { pct: fmt(smaller) })}</span> · {formatBytes(result.inputSize)} → {formatBytes(result.size)}
         </p>
       )}
       <div className="mt-8 flex items-center gap-3">

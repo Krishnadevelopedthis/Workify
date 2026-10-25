@@ -12,11 +12,17 @@ export const TOKEN_TTL: Record<TokenPurpose, number> = {
   "email-change": 24 * 60 * 60_000,
 };
 
-/** Creates a token, replacing earlier ones of the same purpose for this user. */
+/**
+ * Creates a token, replacing earlier ones of the same purpose for this user.
+ * Reset links are the exception: anyone can ask for one for any address, so a
+ * new request must not void the link the owner is about to use. They all end
+ * when they expire or when the password is set (revokeTokens).
+ */
 export function createToken(userId: number, purpose: TokenPurpose, data?: string) {
   const token = newToken();
   db.transaction(() => {
-    db.prepare("DELETE FROM auth_tokens WHERE (user_id = ? AND purpose = ?) OR expires_at < ?").run(userId, purpose, Date.now());
+    db.prepare("DELETE FROM auth_tokens WHERE expires_at < ?").run(Date.now());
+    if (purpose !== "reset") db.prepare("DELETE FROM auth_tokens WHERE user_id = ? AND purpose = ?").run(userId, purpose);
     db.prepare("INSERT INTO auth_tokens (token_hash, user_id, purpose, data, expires_at) VALUES (?, ?, ?, ?, ?)").run(
       tokenHash(token),
       userId,
@@ -53,9 +59,22 @@ export function confirmEmail(token: string, change: boolean): boolean {
   }
   const taken = db.prepare("SELECT 1 FROM users WHERE email = ? AND id != ?").get(row.data ?? "", row.user_id);
   if (taken || !row.data) return false;
-  db.prepare("UPDATE users SET email = ?, email_verified_at = ? WHERE id = ?").run(row.data, Date.now(), row.user_id);
+  db.transaction(() => {
+    db.prepare("UPDATE users SET email = ?, email_verified_at = ? WHERE id = ?").run(row.data, Date.now(), row.user_id);
+    // Links already sent to the old address (a password reset above all) must
+    // not outlive the move away from it.
+    revokeTokens(row.user_id);
+  });
   revokeSessions(row.user_id); // sign in again with the new address
   return true;
+}
+
+/**
+ * Invalidates every outstanding emailed link of the user, e.g. after the
+ * address or the password changes, so an old link cannot undo that change.
+ */
+export function revokeTokens(userId: number) {
+  db.prepare("DELETE FROM auth_tokens WHERE user_id = ?").run(userId);
 }
 
 /** Validates and deletes the token. */

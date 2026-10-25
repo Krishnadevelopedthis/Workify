@@ -41,10 +41,11 @@ echo "==> 4/4 Building and starting Workify for https://$DOMAIN (first build: 20
 # Keep other settings already in .env (SMTP_*, WORKIFY_ADMIN_EMAILS, ...); see .env.example.
 touch .env && chmod 600 .env
 sed -i '/^DOMAIN=/d' .env && echo "DOMAIN=$DOMAIN" >> .env
-sudo docker compose up -d --build
+sudo docker compose pull caddy && sudo docker compose build --pull && sudo docker compose up -d
 
 echo
 echo "Done. Open https://$DOMAIN in a minute (Caddy is getting the HTTPS certificate)."
 echo "Logs:    sudo docker compose logs -f app"
-echo "Update:  git pull && sudo docker compose up -d --build"
+echo "Check:   sudo docker compose exec -u node app /usr/local/bin/workify-chromium --headless --dump-dom about:blank  (HTML to PDF sandbox; DEPLOY.md)"
+echo "Update:  git pull && sudo docker compose pull caddy && sudo docker compose build --pull && sudo docker compose up -d"
 echo "Next:    add email and admin settings to .env (see DEPLOY.md), then: sudo docker compose up -d"

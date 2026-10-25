@@ -104,12 +104,12 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 lg:px-6">
         <Logo />
         <nav className="ms-6 hidden items-center lg:flex" aria-label={t("Main")}>
-          <HoverLink href="/merge-pdf" className={navItem}>{t("Merge PDF")}</HoverLink>
-          <HoverLink href="/split-pdf" className={navItem}>{t("Split PDF")}</HoverLink>
-          <HoverLink href="/compress-pdf" className={navItem}>{t("Compress PDF")}</HoverLink>
+          <HoverLink href="/merge-pdf" className={`group ${navItem}`}><span className="wf-underline">{t("Merge PDF")}</span></HoverLink>
+          <HoverLink href="/split-pdf" className={`group ${navItem}`}><span className="wf-underline">{t("Split PDF")}</span></HoverLink>
+          <HoverLink href="/compress-pdf" className={`group ${navItem}`}><span className="wf-underline">{t("Compress PDF")}</span></HoverLink>
           <div className="relative">
-            <button className={`${navItem} flex items-center gap-1`} onClick={() => toggle("convert")} aria-expanded={open === "convert"}>
-              {t("Convert PDF")} <Icon name="chevron-down" size={16} />
+            <button className={`group ${navItem} flex items-center gap-1`} onClick={() => toggle("convert")} aria-expanded={open === "convert"}>
+              <span className="wf-underline">{t("Convert PDF")}</span> <Icon name="chevron-down" size={16} />
             </button>
             {open === "convert" && (
               <div className="absolute top-full start-0 mt-2 grid w-[460px] grid-cols-2 gap-4 rounded-xl border border-line bg-white p-4 shadow-xl">
@@ -123,8 +123,8 @@ export function Header() {
             )}
           </div>
           <div className="static">
-            <button className={`${navItem} flex items-center gap-1`} onClick={() => toggle("all")} aria-expanded={open === "all"}>
-              {t("All PDF Tools")} <Icon name="chevron-down" size={16} />
+            <button className={`group ${navItem} flex items-center gap-1`} onClick={() => toggle("all")} aria-expanded={open === "all"}>
+              <span className="wf-underline">{t("All PDF Tools")}</span> <Icon name="chevron-down" size={16} />
             </button>
             {open === "all" && (
               <div className="absolute inset-x-0 top-full border-b border-line bg-white shadow-xl">
@@ -182,7 +182,7 @@ export function Header() {
               )}
             </div>
           ) : user === undefined ? (
-            <span aria-hidden className="h-9 w-[150px] animate-pulse rounded-lg bg-bg" />
+            <span aria-hidden className="h-9 w-[150px] animate-pulse rounded-lg motion-reduce:animate-none bg-bg" />
           ) : (
             <>
               <HoverLink href="/login" className="hidden px-3 py-2 text-sm font-semibold hover:text-brand sm:block">{t("Login")}</HoverLink>

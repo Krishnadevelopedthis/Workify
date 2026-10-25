@@ -1,6 +1,8 @@
 import "server-only";
-import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { createReadStream, createWriteStream } from "node:fs";
+import { copyFile, mkdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { pipeline } from "node:stream/promises";
 import JSZip from "jszip";
 import { TOOL_BY_SLUG, WORKFLOW_STEPS } from "@/lib/tools";
 import { EngineMissingError, ToolError } from "./engines";
@@ -105,11 +107,15 @@ export async function runTask(input: TaskInput): Promise<TaskResult> {
         let name = o.name;
         for (let k = 2; used.has(name); k++) name = o.name.replace(/(\.[^.]+)?$/, `_${k}$1`);
         used.add(name);
-        zip.file(name, await readFile(o.path));
+        zip.file(name, createReadStream(o.path));
       }
       const zipName = `workify_${input.slug}.zip`;
       const zipPath = path.join(job.dir, zipName);
-      await writeFile(zipPath, await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }));
+      // Streamed from disk to disk: outputs can add up to far more than fits in memory.
+      await pipeline(
+        zip.generateNodeStream({ type: "nodebuffer", compression: "DEFLATE", streamFiles: true }),
+        createWriteStream(zipPath),
+      );
       download = { path: zipPath, name: zipName };
     }
     const finalDir = path.join(job.dir, "download");

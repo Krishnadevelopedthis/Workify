@@ -32,11 +32,11 @@ export default async function FaqPage() {
     <InfoPage icon="help-circle" title={t("Frequently asked questions")}>
       <div className="space-y-3">
         {FAQ.map(([q, a, href]) => (
-          <details key={q} className="group rounded-xl border border-line bg-white p-5 open:shadow-sm">
-            <summary className="cursor-pointer list-none font-semibold marker:hidden">
+          <details key={q} className="wf-details group rounded-xl border border-line bg-white p-5 open:shadow-sm">
+            <summary className="cursor-pointer list-none rounded-md text-start font-semibold marker:hidden focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand [&::-webkit-details-marker]:hidden">
               <span className="flex items-center justify-between gap-4">
                 {t(q)}
-                <span className="text-xl text-brand transition group-open:rotate-45">+</span>
+                <span className="text-xl text-brand transition group-open:rotate-45 motion-reduce:transition-none">+</span>
               </span>
             </summary>
             <p className="mt-3 leading-7 text-muted">

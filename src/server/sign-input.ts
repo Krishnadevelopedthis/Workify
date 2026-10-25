@@ -6,7 +6,12 @@ import { MAX_SIGNERS, type NewSigner } from "./sign-requests";
 
 // Validation of a new signature request, shared by the website and the API.
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_RE = /^[^\s@\p{Cc}]+@[^\s@\p{Cc}]+\.[^\s@\p{Cc}]+$/u;
+
+/** Names go into email subjects and the audit trail: control characters and line or paragraph separators become one space. */
+function cleanLine(v: unknown, max: number) {
+  return String(v ?? "").replace(/[\p{Cc}\p{Zl}\p{Zp}]+/gu, " ").trim().slice(0, max);
+}
 
 export class SignInputError extends Error {
   constructor(
@@ -17,12 +22,20 @@ export class SignInputError extends Error {
   }
 }
 
+/** The account sent its daily share of invitation emails (sign-requests.ts counts them). */
+export function inviteLimitError(max: number) {
+  return new SignInputError(
+    "You have reached today's limit of {max} signing invitations. Try again tomorrow, or leave the email fields empty and share the links yourself.",
+    { max },
+  );
+}
+
 export function parseSigners(raw: unknown): NewSigner[] {
   if (!Array.isArray(raw) || raw.length === 0) throw new SignInputError("Add at least one signer.");
   if (raw.length > MAX_SIGNERS) throw new SignInputError("A request can have at most {max} signers.", { max: MAX_SIGNERS });
   const seen = new Set<string>();
   return raw.map((s) => {
-    const name = String((s as NewSigner)?.name ?? "").trim().slice(0, 100);
+    const name = cleanLine((s as NewSigner)?.name, 100);
     const email = String((s as NewSigner)?.email ?? "").trim().toLowerCase().slice(0, 254) || null;
     if (!name) throw new SignInputError("Enter a name for every signer.");
     if (email && !EMAIL_RE.test(email)) throw new SignInputError('"{email}" is not a valid email address.', { email });
@@ -60,11 +73,12 @@ export async function validateSignInput(opts: {
   if (signers.some((s) => s.email) && !user?.verified) {
     throw new SignInputError("Log in with a verified email address to invite signers by email, or leave the email fields empty and share the links yourself.");
   }
-  const senderName = (user?.name ?? String(opts.senderName ?? "")).trim().slice(0, 100);
+  const senderName = cleanLine(user?.name ?? opts.senderName, 100);
   if (!senderName) throw new SignInputError("Enter your name, so signers know who sent the document.");
   const bytes = new Uint8Array(await file.arrayBuffer());
   try {
-    await PDFDocument.load(bytes); // reject non-PDFs and locked PDFs up front
+    const doc = await PDFDocument.load(bytes); // reject non-PDFs and locked PDFs up front
+    doc.getPageCount(); // a "%PDF-" header with junk after it only fails here (as in loadPdf)
   } catch {
     throw new SignInputError("This file is not a valid, unlocked PDF.");
   }
@@ -73,7 +87,8 @@ export async function validateSignInput(opts: {
     fileName: safeName(file.name),
     bytes,
     signers,
-    message: String(opts.message ?? "").trim().slice(0, 1000),
+    // Line breaks and tabs are fine in the message body; other control characters are not.
+    message: String(opts.message ?? "").replace(/\r\n?/g, "\n").replace(/[^\P{Cc}\n\t]/gu, "").trim().slice(0, 1000),
     ordered: opts.ordered === true || opts.ordered === "true",
     reminderDays: [0, 1, 2, 3, 7].includes(days) ? days : 0,
     senderName,

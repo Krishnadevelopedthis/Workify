@@ -39,7 +39,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Tailwind's atomic CSS is small; inlining it removes a render-blocking request.
-  experimental: { inlineCss: true },
+  // globalNotFound: app/global-not-found.tsx for URLs that match no route.
+  experimental: { inlineCss: true, globalNotFound: true },
   // Native/binary-backed packages must stay outside the server bundle.
   serverExternalPackages: ["puppeteer-core"],
   turbopack: {

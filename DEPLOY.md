@@ -44,7 +44,8 @@ and [Backups](#backups).
 7. Add your settings (email, admin, secret) to `~/Workify/.env` — start from
    [.env.example](.env.example) — and apply them with
    `sudo docker compose up -d`. Update later with
-   `cd Workify && git pull && sudo docker compose up -d --build`.
+   `cd Workify && git pull && sudo docker compose pull caddy && sudo docker compose build --pull && sudo docker compose up -d`
+   (`--pull` also fetches the newest Node.js base image and Debian security updates).
 
 Oracle may reclaim Always Free VMs that stay almost completely idle for a week;
 upgrading the account to Pay-As-You-Go keeps the free resources free and avoids that.
@@ -64,7 +65,10 @@ upgrading the account to Pay-As-You-Go keeps the free resources free and avoids 
 Notes: the free and Starter plans (512 MB) are too small; services with a disk
 run as a single instance (fine for SQLite). `NEXT_PUBLIC_*` values are baked
 into the build: after changing them, trigger a new deploy. Other variables can
-be changed under **Environment** at any time.
+be changed under **Environment** at any time. After deploying, try HTML→PDF once:
+if it fails with a sandbox error, read [Chromium sandbox](#chromium-sandbox).
+Render rebuilds only on a push, so redeploy manually after Node.js or Chromium
+security releases (**Manual Deploy → Clear build cache & deploy**).
 
 ## Option A — Railway (paid after the trial, deploys from GitHub)
 
@@ -92,11 +96,11 @@ curl -fsSL https://get.docker.com | sh
 git clone https://github.com/<you>/Workify.git && cd Workify
 cp .env.example .env && chmod 600 .env
 nano .env        # set DOMAIN (DNS A record -> server IP), WORKIFY_SECRET, SMTP, admin email
-docker compose up -d --build
+docker compose pull caddy && docker compose build --pull && docker compose up -d
 ```
 
 Caddy gets a free HTTPS certificate automatically. Update later with
-`git pull && docker compose up -d --build`. In `.env`, put values that contain
+`git pull && docker compose pull caddy && docker compose build --pull && docker compose up -d`. In `.env`, put values that contain
 `$` in single quotes (`SMTP_PASS='pa$$word'`), otherwise Compose expands them.
 
 Firewall on the server: allow only 22 (SSH), 80 and 443.
@@ -104,14 +108,23 @@ Firewall on the server: allow only 22 (SSH), 80 and 443.
 ## Option C — Any Docker host (Fly.io, Koyeb…)
 
 ```bash
-docker build -t workify --build-arg NEXT_PUBLIC_SITE_URL=https://your-domain .
-docker run -d -p 3000:3000 -v workify-data:/app/data --env-file workify.env workify
+docker build --pull -t workify --build-arg NEXT_PUBLIC_SITE_URL=https://your-domain .
+docker run -d -p 3000:3000 -v workify-data:/app/data --env-file workify.env \
+  --security-opt seccomp=deploy/chrome-seccomp.json workify
 ```
 
 `workify.env` holds the server variables (see [below](#environment-variables)),
 one `NAME=value` per line; `docker run` reads the values literally, so do not
 quote them. Mount a persistent disk at `/app/data`, expose port `3000`, choose an instance
 with at least 2 GB RAM, and point the host's health check at `/api/health`.
+
+**Always put a reverse proxy (the host's load balancer, Caddy, nginx) in front of
+port 3000 that overwrites `X-Forwarded-For`.** Never publish the port directly to
+the internet: rate limits are keyed on that header, so without such a proxy every
+client could pick its own key and the limits would not apply.
+
+Rebuild regularly (at least after every Node.js or Chromium security release) with
+`--pull`, so the image picks up the new base image and Debian security updates.
 
 ---
 
@@ -170,10 +183,14 @@ certificate. `/admin/system` shows which certificate is in use.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `WORKIFY_TRUST_PROXY` | `1` | Number of reverse proxies in front of the app that append to `X-Forwarded-For` (`2` if you add Cloudflare in front of Caddy). Used for per-client rate limits. |
+| `WORKIFY_TRUST_PROXY` | `1` | Number of reverse proxies in front of the app that append to `X-Forwarded-For`. Used for per-client rate limits. Keep `1` with the included Caddy setup. With Cloudflare in front of Caddy, set `2` **only after** giving Caddy Cloudflare's address ranges with `trusted_proxies` (see the comment in the [Caddyfile](Caddyfile)); without that, Caddy replaces the header and every visitor would share a Cloudflare address. The app logs a warning when the header has fewer entries than this value. |
 | `WORKIFY_MAX_JOBS` | `4` | Heavy conversions running at once. Raise on bigger servers. |
 | `WORKIFY_MAX_QUEUE` | `20` | Conversions allowed to wait before "busy" is returned. |
+| `WORKIFY_PROCESS_GLOBAL_LIMIT` | `6000` | Tool runs allowed site-wide per 10 minutes (each visitor is also limited to 40). Only stops floods; the job queue protects the server. |
 | `WORKIFY_PY_WORKERS` | `2` | Warm Python worker processes (each uses memory). |
+| `WORKIFY_PY_MEMORY_MB` | `1536` | Memory each Python worker may use beyond its libraries (Linux); a file that needs more fails cleanly instead of exhausting the server. `0` turns the cap off. |
+| `WORKIFY_UPLOAD_BUDGET_MB` | a quarter of the memory, at most 1024 | Total size of uploads being received at once; further uploads get "busy, try again in a minute". |
+| `WORKIFY_MEM_LIMIT` | `3g` | `docker-compose.yml` only: memory cap of the app container. Raise it on big servers (e.g. `8g` on Oracle A1). |
 
 ### PDF engines
 
@@ -189,8 +206,8 @@ Set these only if an engine lives elsewhere; `/admin/system` and
 | `WORKIFY_TESSERACT` | Tesseract executable. |
 | `WORKIFY_TESSDATA` | Folder with `*.traineddata` OCR models (and the `configs` folder). Default: `data/tessdata` (filled by `npm run ocr-languages`), then the system folder. |
 | `WORKIFY_PYTHON` | Python with the packages from `py/requirements.txt`. Default: `py/.venv`. |
-| `WORKIFY_CHROME` | Chrome, Edge or Chromium for HTML→PDF. The Docker image sets `/usr/bin/chromium`. |
-| `WORKIFY_CHROME_NO_SANDBOX` | `1` starts Chromium with `--no-sandbox`; the Docker image sets it because containers lack the sandbox's kernel features. Do not set it elsewhere. |
+| `WORKIFY_CHROME` | Chrome, Edge or Chromium for HTML→PDF. The Docker image sets `/usr/local/bin/workify-chromium`, a wrapper that starts `/usr/bin/chromium` with an empty environment (no app secrets). |
+| `WORKIFY_CHROME_NO_SANDBOX` | Not set by the Docker image: Chromium keeps its sandbox, because it renders pages chosen by anyone. `1` starts it with `--no-sandbox`. **Last resort only**, on hosts that cannot allow user namespaces (see [Chromium sandbox](#chromium-sandbox)); it turns off renderer isolation, so a browser exploit would run with the app's own rights. |
 
 ### Google Drive and Dropbox (build time)
 
@@ -310,6 +327,37 @@ project's `data` folder as the source.
 **Restore:** stop the app, copy the chosen `backups/workify-….db` to
 `data/workify.db`, delete `data/workify.db-wal` and `data/workify.db-shm` if
 present, put back `signatures/`, `signing/` and `secret.key`, start the app.
+
+## Chromium sandbox
+
+HTML→PDF opens pages chosen by anyone, so Chromium runs with its sandbox, and
+LibreOffice runs without network access. Both need Linux user namespaces, which
+Docker's default seccomp profile blocks. `docker-compose.yml` therefore starts
+the app with [deploy/chrome-seccomp.json](deploy/chrome-seccomp.json) (Docker's
+default profile plus `clone`, `unshare` and `setns`); with plain `docker run`,
+pass `--security-opt seccomp=deploy/chrome-seccomp.json` (run the command from
+the repository folder). Check it on the server:
+
+```bash
+docker compose exec -u node app /usr/local/bin/workify-chromium --headless --dump-dom about:blank
+```
+
+It should print `<html><head></head><body></body></html>`. If it says
+`No usable sandbox!`:
+
+- the profile is not applied (check `security_opt`, then
+  `docker compose up -d --force-recreate`), or
+- the host restricts user namespaces with AppArmor (some Ubuntu 23.10+ hosts
+  with `kernel.apparmor_restrict_unprivileged_userns=1`). Add
+  `apparmor=unconfined` under `security_opt`, or allow `userns` in an AppArmor
+  profile for the container.
+
+Hosts that cannot allow user namespaces at all (some PaaS): HTML→PDF then
+fails. Only there, and knowing that it turns off renderer isolation, set
+`WORKIFY_CHROME_NO_SANDBOX=1`; better, run that host without secrets in the
+environment, or use a host where the check above passes. LibreOffice keeps
+working without namespaces; the error log then notes that it runs without
+network isolation.
 
 ## Health checks
 

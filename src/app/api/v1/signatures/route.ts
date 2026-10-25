@@ -1,5 +1,6 @@
 import { isLocale } from "@/i18n/config";
 import { ApiError, authenticate } from "@/server/api";
+import { rateLimit } from "@/server/rate-limit";
 import { clientOf } from "@/server/sign-http";
 import { SignInputError, validateSignInput } from "@/server/sign-input";
 import { createRequest, requestsForUser } from "@/server/sign-requests";
@@ -26,6 +27,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   return handle(async () => {
     const user = authenticate(request);
+    // The same limit as the website's form (it emails every signer), also per
+    // account so several IPs or API keys do not add up.
+    const limited = rateLimit("signRequest", request.headers, `user:${user.id}`);
+    if (limited) throw new ApiError(429, limited);
     const form = await request.formData().catch(() => {
       throw new ApiError(400, "Send the request as multipart/form-data.");
     });

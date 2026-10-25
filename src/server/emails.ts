@@ -20,10 +20,19 @@ async function send(
 
 const date = (ms: number, l: Locale) => new Date(ms).toLocaleDateString(LOCALE_TAGS[l], { dateStyle: "long" });
 
-export const sendVerifyEmail = (to: string, name: string, lang: string, token: string) =>
+// Account emails can go to an address nobody has verified yet, and the account
+// name is free text chosen at signup. So the name is only used when it looks
+// like a name (letters, spaces, apostrophes and hyphens, a few short words):
+// no links, no sentences. Otherwise the heading has no name in it.
+const NAME_RE = /^[\p{L}\p{M}]+(?:[ '’-][\p{L}\p{M}]+){0,3}$/u;
+export const isPlainName = (name: string) => name.length <= 40 && NAME_RE.test(name) && !/www/i.test(name);
+const greet = (t: T, name: string, fallback: string) => (isPlainName(name) ? t("Hi {name},", { name }) : fallback);
+
+// Always sent to an address that is not verified yet, so it never includes the name.
+export const sendVerifyEmail = (to: string, _name: string, lang: string, token: string) =>
   send(lang, to, (t, l) => ({
     subject: t("Confirm your email address"),
-    heading: t("Hi {name},", { name }),
+    heading: t("Confirm your email address"),
     paragraphs: [t("Thanks for creating a Workify account. Please confirm that this is your email address.")],
     button: { label: t("Confirm email"), url: localePath(l, `/verify-email?token=${token}`) },
     footer: t("If you didn't create an account, you can ignore this email."),
@@ -32,16 +41,17 @@ export const sendVerifyEmail = (to: string, name: string, lang: string, token: s
 export const sendResetEmail = (to: string, name: string, lang: string, token: string) =>
   send(lang, to, (t, l) => ({
     subject: t("Reset your Workify password"),
-    heading: t("Hi {name},", { name }),
+    heading: greet(t, name, t("Reset your Workify password")),
     paragraphs: [t("Someone asked to reset the password of your Workify account. Click the button to choose a new password. The link works once and expires in one hour.")],
     button: { label: t("Choose a new password"), url: localePath(l, `/reset-password?token=${token}`) },
     footer: t("If you didn't ask for this, you can ignore this email. Your password stays the same."),
   }));
 
-export const sendEmailChange = (to: string, name: string, lang: string, token: string) =>
+// Also sent to an unverified address: no name.
+export const sendEmailChange = (to: string, _name: string, lang: string, token: string) =>
   send(lang, to, (t, l) => ({
     subject: t("Confirm your new email address"),
-    heading: t("Hi {name},", { name }),
+    heading: t("Confirm your new email address"),
     paragraphs: [t("Please confirm that you want to use this address for your Workify account.")],
     button: { label: t("Confirm new email"), url: localePath(l, `/verify-email?change=1&token=${token}`) },
     footer: t("If you didn't ask for this, you can ignore this email."),
@@ -50,7 +60,7 @@ export const sendEmailChange = (to: string, name: string, lang: string, token: s
 export const sendAccountDeleted = (to: string, name: string, lang: string) =>
   send(lang, to, (t) => ({
     subject: t("Your Workify account has been deleted"),
-    heading: t("Hi {name},", { name }),
+    heading: greet(t, name, t("Your Workify account has been deleted")),
     paragraphs: [t("Your Workify account and its data (workflows, templates, API keys and signature requests) have been deleted.")],
     footer: t("Thank you for using Workify."),
   }));
@@ -58,7 +68,7 @@ export const sendAccountDeleted = (to: string, name: string, lang: string) =>
 export const sendPasswordChanged = (to: string, name: string, lang: string) =>
   send(lang, to, (t, l) => ({
     subject: t("Your Workify password was changed"),
-    heading: t("Hi {name},", { name }),
+    heading: greet(t, name, t("Your Workify password was changed")),
     paragraphs: [t("The password of your Workify account was just changed, and other devices were signed out.")],
     button: { label: t("Reset password"), url: localePath(l, "/forgot-password") },
     footer: t("If this wasn't you, reset your password right away."),

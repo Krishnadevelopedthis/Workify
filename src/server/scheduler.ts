@@ -4,7 +4,7 @@ import { adminEmails } from "./auth";
 import { dailyBackup } from "./backup";
 import { db } from "./db";
 import { sendErrorDigest } from "./emails";
-import { retryQueuedEmails } from "./mail";
+import { redactOutbox, retryQueuedEmails } from "./mail";
 import { logError } from "./monitor";
 import { sendDueReminders, sweepExpired } from "./sign-requests";
 
@@ -37,6 +37,7 @@ export function ensureScheduler() {
   const state = (g.workifyScheduler = { lastDigest: 0 });
   const tasks: [string, () => unknown][] = [
     ["email", retryQueuedEmails],
+    ["email-redact", redactOutbox],
     ["reminders", sendDueReminders],
     ["expiry", sweepExpired],
     ["api-tasks", sweepApiTasks],

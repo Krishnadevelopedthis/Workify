@@ -18,7 +18,7 @@ export async function ToolGrid() {
             key={tool.slug}
             href={`/${tool.slug}`}
             data-cat={tool.category}
-            className="group relative flex min-h-56 flex-col rounded-xl border border-line bg-white p-6 transition hover:-translate-y-0.5 hover:border-ink/20 hover:shadow-lg"
+            className="group relative flex min-h-56 flex-col rounded-xl border border-line bg-white p-6 transition hover:-translate-y-0.5 hover:border-ink/20 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0"
           >
             {(tool.isNew || tool.unavailable) && (
               <span

@@ -7,11 +7,21 @@ import { logError } from "./monitor";
 // Every email goes through the outbox table: it is stored first, then sent.
 // Without SMTP settings the email stays in the outbox with status "logged",
 // where admins can read it (useful in development and before SMTP is set up).
+//
+// Emails carry secret links (signing, password reset, email confirmation), so
+// the stored copy keeps them only while they may still be needed: while the
+// email is queued or failed (for retries), and for under an hour when it is
+// only logged. Once sent, or after that hour, every link in the stored html
+// and text is replaced by REDACTED_LINK; address, subject, status and times stay.
 
 export type Email = { to: string; subject: string; html: string; text: string };
 export type OutboxRow = Email & { id: number; to_email: string; status: string; attempts: number; error: string | null; created_at: number; sent_at: number | null };
 
 const MAX_ATTEMPTS = 5;
+/** Logged emails keep their links this long; the 10-minute scheduler redacts them within the hour. */
+const LOGGED_KEEP_MS = 50 * 60_000;
+export const REDACTED_LINK = "[link removed]";
+const URL_RE = /https?:\/\/[^\s"'<>]+/gi;
 const g = globalThis as unknown as { workifyMailer?: Transporter | null };
 
 export const smtpConfigured = () => Boolean(process.env.SMTP_HOST);
@@ -43,13 +53,36 @@ export function sendEmail(email: Email) {
   else void deliver(Number(lastInsertRowid));
 }
 
+const redact = (s: string) => s.replace(URL_RE, REDACTED_LINK);
+
+/** The text the admin panel may show: links only while the email may still need them. */
+export const outboxPreview = (row: { text: string; status: string; created_at: number }) =>
+  row.status === "queued" || row.status === "failed" || (row.status === "logged" && row.created_at >= Date.now() - LOGGED_KEEP_MS)
+    ? row.text
+    : redact(row.text);
+
+/**
+ * True when the stored copy no longer has its links, so it must not be sent
+ * again. (A message that merely quotes the placeholder still has its links.)
+ */
+export const isRedacted = (row: { text: string }) => row.text.includes(REDACTED_LINK) && !/https?:\/\//i.test(row.text);
+
 export async function deliver(id: number) {
   const row = db.prepare("SELECT * FROM outbox WHERE id = ?").get(id) as OutboxRow | undefined;
   const mailer = transport();
   if (!row || !mailer || row.status === "sent") return;
+  if (isRedacted(row)) {
+    db.prepare("UPDATE outbox SET status = 'failed', error = ? WHERE id = ?").run("The links in this email were removed after an hour, so it can't be sent again.", id);
+    return;
+  }
   try {
     await mailer.sendMail({ from: sender(), to: row.to_email, subject: row.subject, html: row.html, text: row.text });
-    db.prepare("UPDATE outbox SET status = 'sent', sent_at = ?, attempts = attempts + 1, error = NULL WHERE id = ?").run(Date.now(), id);
+    db.prepare("UPDATE outbox SET status = 'sent', sent_at = ?, attempts = attempts + 1, error = NULL, html = ?, text = ? WHERE id = ?").run(
+      Date.now(),
+      redact(row.html),
+      redact(row.text),
+      id,
+    );
   } catch (e) {
     const attempts = row.attempts + 1;
     const failed = attempts >= MAX_ATTEMPTS;
@@ -70,6 +103,23 @@ export async function retryQueuedEmails() {
     .prepare("SELECT id FROM outbox WHERE status = 'queued' AND created_at < ? ORDER BY id LIMIT 50")
     .all(Date.now() - 60_000) as { id: number }[];
   for (const r of rows) await deliver(r.id);
+}
+
+/**
+ * Removes the links from sent emails and from logged emails older than
+ * LOGGED_KEEP_MS (scheduler). Queued and failed emails keep theirs for retries.
+ */
+export function redactOutbox() {
+  const rows = db
+    .prepare(
+      `SELECT id, html, text FROM outbox
+       WHERE (status = 'sent' OR (status = 'logged' AND created_at < ?))
+         AND (html LIKE '%http://%' OR html LIKE '%https://%' OR text LIKE '%http://%' OR text LIKE '%https://%')`,
+    )
+    .all(Date.now() - LOGGED_KEEP_MS) as { id: number; html: string; text: string }[];
+  const update = db.prepare("UPDATE outbox SET html = ?, text = ? WHERE id = ?");
+  for (const r of rows) update.run(redact(r.html), redact(r.text), r.id);
+  return rows.length;
 }
 
 /** Checks the SMTP connection (admin panel). */

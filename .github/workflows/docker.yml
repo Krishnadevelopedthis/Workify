@@ -3,8 +3,12 @@ name: Docker image
 on:
   push:
     branches: [main]
-    paths: [Dockerfile, .dockerignore, package.json, package-lock.json, py/**, src/**, next.config.ts, .github/workflows/docker.yml]
+    paths: [Dockerfile, .dockerignore, package.json, package-lock.json, py/**, src/**, next.config.ts, deploy/chrome-seccomp.json, .github/workflows/docker.yml]
   workflow_dispatch:
+  # Weekly rebuild on the newest base image and Debian security updates
+  # (Chromium, Ghostscript, LibreOffice), so a broken update shows up early.
+  schedule:
+    - cron: "0 4 * * 1"
 
 permissions:
   contents: read
@@ -17,18 +21,28 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build image
-        run: docker build -t workify:ci --build-arg NEXT_PUBLIC_SITE_URL=http://localhost:3000 .
+        run: docker build --pull -t workify:ci --build-arg NEXT_PUBLIC_SITE_URL=http://localhost:3000 .
 
       - name: Start container
         run: |
           set -euo pipefail
-          docker run -d --name workify -p 3000:3000 -e WORKIFY_SECRET=ci-smoke-test-secret workify:ci
+          docker run -d --name workify -p 3000:3000 -e WORKIFY_SECRET=ci-smoke-test-secret \
+            --security-opt seccomp=deploy/chrome-seccomp.json workify:ci
           for i in $(seq 1 60); do
             curl -sf http://localhost:3000/api/health >/dev/null && break
             sleep 2
           done
           curl -sf -o /dev/null http://localhost:3000/api/health || { echo "The app did not start."; exit 1; }
           curl -sf -o /dev/null -w "home page: HTTP %{http_code}\n" http://localhost:3000/
+
+      - name: Chromium runs with its sandbox
+        run: |
+          set -euo pipefail
+          # Fails with "No usable sandbox!" if user namespaces are blocked (DEPLOY.md, "Chromium sandbox").
+          out=$(docker exec -u node workify /usr/local/bin/workify-chromium --headless --no-first-run --dump-dom about:blank 2>&1)
+          echo "$out" | tail -5
+          grep -q '<body></body>' <<<"$out"
+          docker exec workify sh -c 'cat /proc/1/comm' | grep -qx tini || { echo "PID 1 is not tini"; exit 1; }
 
       - name: Health check reports every engine
         run: |
