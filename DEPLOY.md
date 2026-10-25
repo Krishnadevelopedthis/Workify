@@ -140,7 +140,7 @@ A template with every variable is in [.env.example](.env.example).
 | Variable | Default | Purpose |
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | **Set in production.** The public URL, used in emailed links (verification, password reset, signing invitations), canonical links, the sitemap, social previews and the API docs. Build time. |
-| `WORKIFY_SECRET` | random value stored in `data/secret.key` | **Recommended.** Server secret that encrypts signing links (so reminders can re-send them) and derives each user's webhook signing secret. Use a long random string (`openssl rand -base64 32`). Changing it breaks links already emailed and changes every webhook secret. If you leave it unset, keep `data/secret.key` with your backups. |
+| `WORKIFY_SECRET` | random value stored in `data/secret.key` | **Recommended.** Server secret that encrypts signing links, so reminders can re-send them. Use a long random string (`openssl rand -base64 32`). Changing it breaks links already emailed. If you leave it unset, keep `data/secret.key` with your backups. |
 
 ### Accounts and admin
 
@@ -296,7 +296,7 @@ server every day:
 
 | Path in `data/` | What |
 |---|---|
-| `backups/` | database copies (accounts, workflows, requests, API keys) |
+| `backups/` | database copies (accounts, workflows, signature requests) |
 | `signatures/` | uploaded and signed PDFs of signature requests |
 | `signing/` | the self-signed seal certificate |
 | `secret.key` | server secret, if `WORKIFY_SECRET` is not set |
@@ -370,10 +370,6 @@ PDF engines found. Point any uptime monitor at it, for example
 
 - **Signature requests** need email for invitations and reminders. Without
   SMTP, senders can still copy each signer's link from the request page.
-- **Developer API** (`/api/v1`, docs at `/developers`): users create API keys
-  and webhooks on their account's Developer page. Links in API responses and
-  webhooks use `NEXT_PUBLIC_SITE_URL`. Zapier ("Webhooks by Zapier") and Make
-  ("HTTP" and "Webhooks" modules) call the same endpoints.
 - **Install as an app (PWA)** and **Dropbox save** need the site on public
   HTTPS; Dropbox downloads the file from your server itself.
 - **Languages**: all 11 are built in; nothing to configure.

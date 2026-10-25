@@ -11,7 +11,6 @@ const FEATURES = [
   { icon: "lock", title: "Secure", text: "Password-protect or unlock PDFs, permanently redact sensitive content and compare two versions side by side." },
   { icon: "signature", title: "Sign", text: "Sign yourself, or send a document to several signers in order, with email invites, reminders, an audit trail and a digital certificate." },
   { icon: "route", title: "Workflows", text: "Chain several tools into one reusable workflow and run it on many files at once." },
-  { icon: "code", title: "Developer API", text: "Run every tool from your own code or from Zapier and Make, with API keys and webhooks." },
   { icon: "world", title: "11 languages", text: "Use Workify in English, Hindi, Spanish, French, German, Portuguese, Arabic, Indonesian, Japanese, Russian or Chinese." },
   { icon: "cloud-upload", title: "Cloud import and export", text: "Open files from Google Drive or Dropbox and save the results back with one click." },
   { icon: "upload", title: "Drag & drop", text: "Drop files anywhere on the page, reorder them by dragging and pick up where you left off with “Continue to…”." },

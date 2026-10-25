@@ -7,7 +7,7 @@ import { getT } from "@/i18n/server";
 
 const FAQ: [string, string, string?][] = [
   ["Is Workify free?", "Yes. Every tool is free to use. A Premium plan is coming later, and everything you can do today stays free."],
-  ["Do I need an account?", "No. An account lets you save workflows, track signature requests and create API keys. <link>Create one here</link>.", "/signup"],
+  ["Do I need an account?", "No. An account lets you save workflows and track signature requests. <link>Create one here</link>.", "/signup"],
   ["What happens to my files?", "Files are processed on our server and deleted automatically after one hour. You can delete them right away from the download page. Read more on our <link>Security</link> page.", "/security"],
   ["How large can my files be?", "Each file can be up to 200 MB, and up to 500 MB per task."],
   ["Can I process several files at once?", "Yes. Most tools accept multiple files and return them together in a ZIP."],
@@ -17,7 +17,6 @@ const FAQ: [string, string, string?][] = [
   ["My PDF is password protected. What can I do?", "Use <link>Unlock PDF</link> with the password, then use any other tool on the unlocked file.", "/unlock-pdf"],
   ["Is redaction permanent?", "Yes. Redact PDF removes the underlying text and image pixels; the content cannot be recovered from the redacted file."],
   ["How does Scan to PDF work with my phone?", "Open Scan to PDF on your computer, click “Show QR code”, and scan it with your phone. Photos you take on the phone appear on the computer automatically."],
-  ["Can I use Workify from my own software?", "Yes. Create an API key in your account and follow the <link>developer guide</link>.", "/developers"],
   ["Which browsers are supported?", "Recent versions of Chrome, Edge, Firefox and Safari on desktop and mobile."],
 ];
 

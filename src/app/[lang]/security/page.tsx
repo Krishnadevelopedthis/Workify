@@ -12,7 +12,6 @@ const ITEMS = [
   { icon: "world-www", title: "Isolated web capture", text: "HTML to PDF refuses addresses on private networks, so the tool cannot be used to reach internal systems." },
   { icon: "signature", title: "Unguessable signing links", text: "Every signer gets a personal link with a random 128-bit token. Links expire after 30 days." },
   { icon: "certificate", title: "Tamper-evident signatures", text: "Completed documents carry a digital signature and an audit trail, so any later change to the file is detectable." },
-  { icon: "key", title: "Hashed API keys", text: "API keys are shown once and stored only as a hash. Revoke a key at any time from your account." },
 ];
 
 export async function generateMetadata(): Promise<Metadata> {

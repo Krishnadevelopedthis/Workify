@@ -6,7 +6,6 @@ import { getT } from "@/i18n/server";
 const ITEMS = [
   { icon: "route", title: "Automate with workflows", text: "Save multi-step workflows such as compress → number pages → protect, and run them on batches of files." },
   { icon: "signature", title: "Collect signatures", text: "Send documents to several signers in order, with email invites, reminders, an audit trail and a digital certificate." },
-  { icon: "code", title: "Connect your systems", text: "Use the developer API and webhooks to run Workify from your own software, Zapier or Make." },
   { icon: "shield-check", title: "Self-hosted", text: "Run Workify on your own server so documents never leave your network." },
   { icon: "eye-off", title: "Compliance-ready redaction", text: "Permanently remove personal data before sharing documents." },
   { icon: "archive", title: "Long-term archiving", text: "Convert records to PDF/A for long-term storage." },

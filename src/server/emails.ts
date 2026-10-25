@@ -61,7 +61,7 @@ export const sendAccountDeleted = (to: string, name: string, lang: string) =>
   send(lang, to, (t) => ({
     subject: t("Your Workify account has been deleted"),
     heading: greet(t, name, t("Your Workify account has been deleted")),
-    paragraphs: [t("Your Workify account and its data (workflows, templates, API keys and signature requests) have been deleted.")],
+    paragraphs: [t("Your Workify account and its data (workflows, templates and signature requests) have been deleted.")],
     footer: t("Thank you for using Workify."),
   }));
 

@@ -18,8 +18,6 @@ paid plans (the Premium card on the pricing page is a "coming soon" waitlist).
   delete account; saved workflows and signature requests.
 - **Admin panel** at `/admin`: users, signature requests, outbox, errors,
   contact messages, Premium waitlist, backups and a system check.
-- **Developer API** at `/api/v1` with personal API keys, background tasks and
-  signed webhooks; works with Zapier and Make. Docs at `/developers`.
 - **11 languages** (en, hi, es, fr, de, pt, ar, id, ja, ru, zh). English URLs have
   no prefix, the others start with the language (`/hi/merge-pdf`); Arabic is
   right-to-left.
@@ -65,7 +63,7 @@ details is in [DEPLOY.md](DEPLOY.md#environment-variables).
 | Variable | Default | Meaning |
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | public URL for links in emails, canonical links, sitemap (build time) |
-| `WORKIFY_SECRET` | generated in `data/secret.key` | server secret for signing links and webhook signatures |
+| `WORKIFY_SECRET` | generated in `data/secret.key` | server secret that encrypts signing links |
 | `WORKIFY_ADMIN_EMAILS` | — | comma-separated emails that are admins (once verified) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | not set, `587` | outgoing email; without `SMTP_HOST` emails stay in the admin outbox |
 | `MAIL_FROM` | `Workify <no-reply@your-host>` | sender address |
@@ -106,20 +104,19 @@ as described in [DEPLOY.md](DEPLOY.md#first-admin-without-smtp).
 ## Security measures in the app
 
 - Per-client + global rate limits, a bounded job queue, upload size and count limits
-  checked before the body is read; API keys are rate limited separately.
+  checked before the body is read.
 - CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS;
   no `X-Powered-By`.
 - Passwords hashed with scrypt; constant-time comparison; equal-time failures for unknown
   emails; login limited per IP and per email; sessions stored as SHA-256 hashes in
   http-only, SameSite=Lax cookies; changing the password signs out other devices.
-- Password-reset and verification links and API keys are stored only as SHA-256 hashes;
+- Password-reset and verification links are stored only as SHA-256 hashes;
   signing links are looked up by hash and kept encrypted (AES-256-GCM) for reminders.
 - Admin pages and actions check the admin role on the server; admins need a verified email.
 - Safe redirects after login (no open redirect).
 - Uploaded files live in random, unguessable job folders, are never served from the
   project folder, and are deleted after one hour (immediately on failure).
-- HTML→PDF blocks private/loopback/link-local addresses, also on redirects. Webhooks
-  go only to public addresses, do not follow redirects and are signed with HMAC-SHA256.
+- HTML→PDF blocks private/loopback/link-local addresses, also on redirects.
 - PDF passwords are passed to qpdf through a temporary args file, not the process list.
 - Ghostscript runs with `-dSAFER`; Python runs isolated (`-I`).
 - All coordinates, sizes and texts from the editors are validated and clamped server-side.

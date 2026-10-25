@@ -13,7 +13,6 @@ const FREE_FEATURES = [
   "Files up to 200 MB",
   "Signature requests with audit trail",
   "Saved workflows",
-  "Developer API",
   "Files deleted after 1 hour",
 ];
 

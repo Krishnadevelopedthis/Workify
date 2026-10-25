@@ -10,7 +10,7 @@ import { TOOL_BY_SLUG } from "@/lib/tools";
 const PAGES = new Set([
   "/", "/tools", "/pricing", "/faq", "/features", "/security", "/privacy", "/terms", "/cookies",
   "/about", "/contact", "/blog", "/press", "/desktop", "/mobile", "/business", "/education",
-  "/developers", "/login", "/signup", "/create-workflow",
+  "/login", "/signup", "/create-workflow",
 ]);
 
 const DEVICES = new Set(["mobile", "tablet", "desktop"]);

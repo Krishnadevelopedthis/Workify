@@ -1,5 +1,4 @@
 import "server-only";
-import { sweepApiTasks } from "./api";
 import { adminEmails } from "./auth";
 import { dailyBackup } from "./backup";
 import { db } from "./db";
@@ -42,7 +41,6 @@ export function ensureScheduler() {
     ["email-redact", redactOutbox],
     ["reminders", sendDueReminders],
     ["expiry", sweepExpired],
-    ["api-tasks", sweepApiTasks],
     ["backup", dailyBackup],
     ["digest", () => errorDigest(state)],
     ["prune", pruneLogs],

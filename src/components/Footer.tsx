@@ -16,7 +16,6 @@ const COLUMNS: Record<string, [string, string][]> = {
     ["Workify Desktop", "/desktop"],
     ["Workify Mobile", "/mobile"],
     ["Workflows", "/create-workflow"],
-    ["Developers", "/developers"],
   ],
   Solutions: [
     ["Business", "/business"],

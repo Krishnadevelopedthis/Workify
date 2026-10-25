@@ -27,7 +27,7 @@ export function VerifyBanner({ email }: { email: string }) {
       <p className="flex-1 text-sm">
         {state.ok
           ? t("We sent a new confirmation link to {email}.", { email })
-          : t("Please confirm your email address ({email}) to send signature invitations and create API keys.", { email })}
+          : t("Please confirm your email address ({email}) to send signature invitations.", { email })}
         {state.error && <span className="block text-brand">{state.error}</span>}
       </p>
       {!state.ok && (

@@ -63,7 +63,7 @@ export async function verifyPassword(password: string, stored: string) {
   return timingSafeEqual(actual, expected);
 }
 
-// Only a hash of a token (session, API key, emailed link) is stored, so a
+// Only a hash of a token (session or emailed link) is stored, so a
 // leaked database cannot be replayed.
 export const tokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
 export const newToken = (bytes = 32) => randomBytes(bytes).toString("base64url");

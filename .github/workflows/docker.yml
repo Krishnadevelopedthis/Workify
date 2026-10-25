@@ -107,18 +107,13 @@ jobs:
           check pdf-to-powerpoint -F files=@scan.pdf -F 'options={"ocr":true,"language":"eng"}'
           expect_text .pptx
 
-      - name: Smoke test the developer API
+      - name: The developer API must stay removed
         run: |
           set -euo pipefail
-          for auth in "" "Authorization: Bearer wfy_notarealkeynotarealkey"; do
-            for path in me tools; do
-              body=$(curl -s -w '\n%{http_code}' ${auth:+-H "$auth"} "http://localhost:3000/api/v1/$path")
-              code=${body##*$'\n'}
-              reply=${body%$'\n'*}
-              echo "/api/v1/$path ${auth:+(bad key) }-> HTTP $code $reply"
-              [ "$code" = "401" ]
-              jq -e '.error.status == 401 and (.error.message | length > 0)' <<<"$reply" >/dev/null
-            done
+          for path in me tools signatures; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3000/api/v1/$path")
+            echo "/api/v1/$path -> HTTP $code"
+            [ "$code" = "404" ]
           done
 
       - name: Smoke test a signature request with two signers

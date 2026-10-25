@@ -15,7 +15,6 @@ import { drawableText } from "./pdf-helpers";
 import { certificateInfo, sealPdf } from "./pdf-sign";
 import { seal, unseal } from "./secret";
 import { inviteLimitError } from "./sign-input";
-import { dispatchWebhook } from "./webhooks";
 
 // Signature requests with several signers, optional signing order, email
 // invitations and reminders, and an audit trail. Files live in
@@ -403,7 +402,6 @@ export async function recordSignature(request: SignRequest, signer: Signer, sign
     throw new ToolError("This document can't be signed right now.");
   }
   await rename(tmp, path.join(dir, "current.pdf"));
-  void dispatchWebhook(request.owner_id, "signature.signed", { request_id: request.id, file_name: request.file_name, signer: { name: signer.name, email: signer.email } });
 
   const signers = signersOf(request.id);
   const remaining = signers.filter((s) => s.status !== "signed");
@@ -446,7 +444,6 @@ export function decline(request: SignRequest, signer: Signer, reason: string, cl
     if (e instanceof StateChanged) return false;
     throw e;
   }
-  void dispatchWebhook(request.owner_id, "signature.declined", { request_id: request.id, file_name: request.file_name, signer: { name: signer.name, email: signer.email }, reason });
   if (request.sender_email) {
     void sendSignDeclined({
       to: request.sender_email,
@@ -616,7 +613,6 @@ async function finalize(request: SignRequest) {
     return;
   }
   event(request.id, null, "completed");
-  void dispatchWebhook(request.owner_id, "signature.completed", { request_id: request.id, file_name: request.file_name });
 
   const signers = signersOf(request.id);
   for (const s of signers) {

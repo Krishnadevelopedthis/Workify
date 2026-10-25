@@ -73,7 +73,7 @@ export default async function AccountPage({ searchParams }: PageProps<"/[lang]/a
           <div className="rounded-2xl border border-brand/30 bg-white p-6">
             <h2 className="mb-1 font-bold text-brand">{t("Delete account")}</h2>
             <p className="mb-4 text-sm text-muted">
-              {t("This permanently deletes your account, workflows, signature templates, API keys and signature requests. It cannot be undone.")}
+              {t("This permanently deletes your account, workflows, signature templates and signature requests. It cannot be undone.")}
             </p>
             <DeleteAccount />
           </div>

@@ -6,7 +6,7 @@ import { TOOLS } from "@/lib/tools";
 
 const PAGES = [
   "/", "/tools", "/features", "/pricing", "/faq", "/security", "/privacy", "/terms", "/cookies",
-  "/about", "/contact", "/blog", "/press", "/desktop", "/mobile", "/business", "/education", "/developers",
+  "/about", "/contact", "/blog", "/press", "/desktop", "/mobile", "/business", "/education",
 ];
 
 type Entry = Omit<MetadataRoute.Sitemap[number], "url" | "alternates">;

@@ -98,8 +98,6 @@ export const LIMITS = {
   contact: { perClient: 5, global: 100, windowMs: 60 * 60_000 },
   /** Actions that send an email to an address the user typed. */
   email: { perClient: 10, global: 300, windowMs: 60 * 60_000 },
-  /** Developer API calls, keyed by API key. */
-  api: { perClient: 120, global: 2000, windowMs: 10 * 60_000 },
 } satisfies Record<string, LimitRule>;
 
 /**

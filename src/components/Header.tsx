@@ -18,7 +18,6 @@ const APPS = [
   { href: "/business", icon: "building", label: "Business" },
   { href: "/education", icon: "school", label: "Education" },
   { href: "/create-workflow", icon: "route", label: "Workflows" },
-  { href: "/developers", icon: "code", label: "Developers" },
   { href: "/pricing", icon: "crown", label: "Pricing" },
 ];
 

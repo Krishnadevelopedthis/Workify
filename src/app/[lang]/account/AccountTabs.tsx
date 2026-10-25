@@ -9,7 +9,6 @@ import { splitLocale } from "@/i18n/config";
 const TABS = [
   { href: "/account", icon: "user", label: "Profile" },
   { href: "/account/signatures", icon: "signature", label: "Signatures" },
-  { href: "/account/developer", icon: "code", label: "Developer" },
 ];
 
 export function AccountTabs() {

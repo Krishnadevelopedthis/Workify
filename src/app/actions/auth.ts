@@ -224,7 +224,7 @@ export async function changeEmail(_prev: AuthState, form: FormData): Promise<Aut
   return { ok: true };
 }
 
-/** Deletes the account, its sessions, workflows, templates, API keys and signature requests. */
+/** Deletes the account, its sessions, workflows, templates and signature requests. */
 export async function deleteAccount(_prev: AuthState, form: FormData): Promise<AuthState> {
   const { t, lang } = await requestT();
   const user = await currentUser();
