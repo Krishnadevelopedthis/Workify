@@ -3,7 +3,9 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-export const DATA_DIR = path.join(/* turbopackIgnore: true */ process.cwd(), "data");
+// WORKIFY_DATA_DIR moves the database and its files elsewhere (tests give each
+// worker its own folder, so parallel test files never share one database).
+export const DATA_DIR = process.env.WORKIFY_DATA_DIR || path.join(/* turbopackIgnore: true */ process.cwd(), "data");
 
 const globalForDb = globalThis as unknown as { workifyDb?: DatabaseSync };
 

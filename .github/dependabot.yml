@@ -20,6 +20,14 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # Packages that must move together, in one PR.
+    groups:
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+    ignore:
+      # Types follow the Node.js runtime (24 LTS, see .nvmrc).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: pip
     directory: /py
     schedule:

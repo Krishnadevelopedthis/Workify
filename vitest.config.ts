@@ -13,6 +13,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    setupFiles: ["src/test/data-dir.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     exclude: [...configDefaults.exclude, ".next/**", "data/**"],
   },
