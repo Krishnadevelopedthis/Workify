@@ -8,6 +8,7 @@ import { splitLocale } from "@/i18n/config";
 
 const ITEMS = [
   { href: "/admin", icon: "layout-dashboard", label: "Dashboard" },
+  { href: "/admin/analytics", icon: "chart-bar", label: "Analytics" },
   { href: "/admin/users", icon: "users", label: "Users" },
   { href: "/admin/messages", icon: "inbox", label: "Messages" },
   { href: "/admin/emails", icon: "mail", label: "Emails" },

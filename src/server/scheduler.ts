@@ -28,6 +28,8 @@ function pruneLogs() {
   const day = 86_400_000;
   db.prepare("DELETE FROM error_log WHERE at < ?").run(Date.now() - 30 * day);
   db.prepare("DELETE FROM task_stats WHERE at < ?").run(Date.now() - 90 * day);
+  // Visitor totals: a year of history, so year-on-year numbers still work.
+  db.prepare("DELETE FROM page_stats WHERE day < ?").run(new Date(Date.now() - 365 * day).toISOString().slice(0, 10));
   db.prepare("DELETE FROM outbox WHERE created_at < ? AND status != 'queued'").run(Date.now() - 30 * day);
   db.prepare("DELETE FROM auth_tokens WHERE expires_at < ?").run(Date.now());
 }

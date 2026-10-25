@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { PageView } from "@/components/PageView";
 import { I18nProvider } from "@/i18n/client";
 import { LOCALES, RTL_LOCALES } from "@/i18n/config";
 import { getT } from "@/i18n/server";
@@ -61,6 +62,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
     >
       <body className="flex min-h-full flex-col">
         <I18nProvider lang={lang} messages={await loadMessages(lang)}>
+          <PageView />
           <Header />
           <main className="flex flex-1 flex-col">{children}</main>
           <Footer />

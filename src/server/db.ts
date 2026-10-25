@@ -234,6 +234,23 @@ const MIGRATIONS: ((db: DatabaseSync) => void)[] = [
     }
     db.exec("DROP TABLE signature_requests;");
   },
+  // v3: visitor counts. Only daily totals are kept, never a row per visit, so
+  // there is nothing in here that can be traced back to a person.
+  (db) => {
+    db.exec(`
+      CREATE TABLE page_stats (
+        day TEXT NOT NULL,                -- YYYY-MM-DD (UTC)
+        path TEXT NOT NULL,               -- a known route only, e.g. "/merge-pdf"
+        lang TEXT NOT NULL,
+        device TEXT NOT NULL,             -- mobile | tablet | desktop
+        referrer TEXT NOT NULL,           -- host only, "" when the visitor came directly
+        views INTEGER NOT NULL DEFAULT 0,
+        visits INTEGER NOT NULL DEFAULT 0, -- first page of a browser session
+        PRIMARY KEY (day, path, lang, device, referrer)
+      ) WITHOUT ROWID;
+      CREATE INDEX idx_page_stats_day ON page_stats(day);
+    `);
+  },
 ];
 
 function open() {
