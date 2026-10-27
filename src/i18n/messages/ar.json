@@ -1228,5 +1228,7 @@
  "Your workflow is complete!": "اكتمل سير عملك!",
  "Your Workify account and its data (workflows, templates and signature requests) have been deleted.": "تم حذف حساب Workify وبياناته (سير العمل والقوالب وطلبات التوقيع).",
  "Your Workify account has been deleted": "تم حذف حسابك في Workify",
- "Your Workify password was changed": "تم تغيير كلمة مرور Workify"
+ "Your Workify password was changed": "تم تغيير كلمة مرور Workify",
+ "Show password": "إظهار كلمة المرور",
+ "Hide password": "إخفاء كلمة المرور"
 }

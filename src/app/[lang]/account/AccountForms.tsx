@@ -13,6 +13,7 @@ import {
 import { deleteWorkflow } from "@/app/actions/workflows";
 import { Icon } from "@/components/Icon";
 import { useT } from "@/i18n/client";
+import { IconInput } from "@/components/ui/IconInput";
 
 const Error = ({ message }: { message?: string }) => (message ? <p className="text-sm text-brand">{message}</p> : null);
 const Ok = ({ children }: { children: React.ReactNode }) => <p className="text-sm text-[#4a8a32]">{children}</p>;
@@ -49,7 +50,7 @@ export function NameForm({ name }: { name: string }) {
   }, {});
   return (
     <form action={action} className="space-y-3">
-      <input className="input" name="name" defaultValue={name} autoComplete="name" required />
+      <IconInput icon="user" name="name" maxLength={100} defaultValue={name} autoComplete="name" required />
       <Error message={state.error} />
       {state.ok && <Ok>{t("Saved.")}</Ok>}
       <button className="btn-secondary" disabled={pending}>{pending ? t("Saving…") : t("Save")}</button>
@@ -63,8 +64,8 @@ export function EmailForm() {
   if (state.ok) return <Ok>{t("We sent a confirmation link to your new address. Your email changes when you click it.")}</Ok>;
   return (
     <form action={action} className="space-y-3">
-      <input className="input" name="email" type="email" placeholder={t("New email address")} autoComplete="email" required />
-      <input className="input" name="password" type="password" placeholder={t("Current password")} autoComplete="current-password" required />
+      <IconInput icon="mail" name="email" type="email" maxLength={254} placeholder={t("New email address")} autoComplete="email" required />
+      <IconInput icon="lock" name="password" type="password" placeholder={t("Current password")} autoComplete="current-password" required />
       <Error message={state.error} />
       <button className="btn-secondary" disabled={pending}>{pending ? t("Please wait…") : t("Change email")}</button>
     </form>
@@ -76,8 +77,8 @@ export function PasswordForm() {
   const [state, action, pending] = useActionState<AuthState, FormData>(changePassword, {});
   return (
     <form action={action} className="space-y-3">
-      <input className="input" name="current" type="password" placeholder={t("Current password")} autoComplete="current-password" required />
-      <input className="input" name="next" type="password" placeholder={t("New password (8+ characters)")} autoComplete="new-password" minLength={8} required />
+      <IconInput icon="lock" name="current" type="password" placeholder={t("Current password")} autoComplete="current-password" required />
+      <IconInput icon="lock" name="next" type="password" placeholder={t("New password (8+ characters)")} autoComplete="new-password" minLength={8} maxLength={200} required />
       <Error message={state.error} />
       {state.ok && <Ok>{t("Password changed. Other devices were signed out.")}</Ok>}
       <button className="btn-secondary" disabled={pending}>{pending ? t("Saving…") : t("Change password")}</button>
@@ -131,10 +132,10 @@ export function DeleteAccount() {
   }
   return (
     <form action={action} className="max-w-sm space-y-3">
-      <input className="input" name="password" type="password" placeholder={t("Current password")} autoComplete="current-password" required />
+      <IconInput icon="lock" name="password" type="password" placeholder={t("Current password")} autoComplete="current-password" required />
       <label className="block text-sm">
         <span className="mb-1 block">{t("Type DELETE to confirm")}</span>
-        <input className="input" name="confirm" autoComplete="off" required />
+        <IconInput icon="alert-triangle" name="confirm" autoComplete="off" required />
       </label>
       <Error message={state.error} />
       <div className="flex gap-2">

@@ -6,6 +6,7 @@ import { AuthCard, FormError } from "@/components/AuthForm";
 import { Icon } from "@/components/Icon";
 import { useT } from "@/i18n/client";
 import { Link } from "@/i18n/Link";
+import { IconInput } from "@/components/ui/IconInput";
 
 export function ForgotForm() {
   const t = useT();
@@ -27,7 +28,7 @@ export function ForgotForm() {
       <form action={action} className="mt-6 space-y-4">
         <label className="block text-sm">
           <span className="mb-1 block font-semibold">{t("Email")}</span>
-          <input className="input" name="email" type="email" autoComplete="email" defaultValue={state.values?.email} required />
+          <IconInput icon="mail" name="email" type="email" maxLength={254} autoComplete="email" defaultValue={state.values?.email} required />
         </label>
         <button className="btn-primary w-full" disabled={pending}>{pending ? t("Please wait…") : t("Send reset link")}</button>
       </form>

@@ -7,6 +7,7 @@ import { Link } from "@/i18n/Link";
 import { rich } from "@/i18n/rich";
 import { Icon } from "./Icon";
 import { Logo } from "./Logo";
+import { IconInput } from "@/components/ui/IconInput";
 
 export function AuthCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
@@ -47,12 +48,12 @@ export function AuthForm({ mode, next }: { mode: "login" | "signup"; next: strin
         {isSignup && (
           <label className="block text-sm">
             <span className="mb-1 block font-semibold">{t("Name")}</span>
-            <input className="input" name="name" autoComplete="name" defaultValue={state.values?.name} required />
+            <IconInput icon="user" name="name" maxLength={100} autoComplete="name" defaultValue={state.values?.name} required />
           </label>
         )}
         <label className="block text-sm">
           <span className="mb-1 block font-semibold">{t("Email")}</span>
-          <input className="input" name="email" type="email" autoComplete="email" defaultValue={state.values?.email} required />
+          <IconInput icon="mail" name="email" type="email" maxLength={254} autoComplete="email" defaultValue={state.values?.email} required />
         </label>
         <label className="block text-sm">
           <span className="mb-1 flex items-center justify-between font-semibold">
@@ -61,10 +62,11 @@ export function AuthForm({ mode, next }: { mode: "login" | "signup"; next: strin
               <Link href="/forgot-password" className="text-xs font-medium text-brand">{t("Forgot password?")}</Link>
             )}
           </span>
-          <input
-            className="input"
+          <IconInput
+            icon="lock"
             name="password"
             type="password"
+            maxLength={200}
             autoComplete={isSignup ? "new-password" : "current-password"}
             minLength={isSignup ? 8 : undefined}
             required

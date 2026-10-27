@@ -1228,5 +1228,7 @@
  "Your workflow is complete!": "Seu fluxo de trabalho foi concluído!",
  "Your Workify account and its data (workflows, templates and signature requests) have been deleted.": "A sua conta Workify e os seus dados (fluxos de trabalho, modelos e pedidos de assinatura) foram eliminados.",
  "Your Workify account has been deleted": "Sua conta do Workify foi excluída",
- "Your Workify password was changed": "Sua senha do Workify foi alterada"
+ "Your Workify password was changed": "Sua senha do Workify foi alterada",
+ "Show password": "Mostrar senha",
+ "Hide password": "Ocultar senha"
 }

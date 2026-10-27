@@ -8,6 +8,7 @@ import { DrawLayer, PageNav, type Box } from "../DrawLayer";
 import { Workspace } from "../GenericWorkspace";
 import { PdfPage, rectToPdf, rectToScreen, useFitWidth, usePdf } from "../PdfPage";
 import type { EditorProps } from "../ToolRunner";
+import { IconInput } from "@/components/ui/IconInput";
 
 type PdfRect = { x: number; y: number; width: number; height: number };
 type Existing = { name: string; type: string; page: number; rect: PdfRect; options?: string[]; exportValue?: string };
@@ -170,8 +171,10 @@ export default function FormsEditor({ tool, items, submit, error, setError }: Ed
                 {created.map((f) => (
                   <div key={f.id} className="flex items-center gap-2">
                     <span className="w-8 shrink-0 text-xs text-muted">p{f.page}</span>
-                    <input
-                      className="input !py-1 text-sm"
+                    <IconInput
+                      icon="pencil"
+                      wrapperClassName="min-w-0 flex-1"
+                      className="!py-1 text-sm"
                       value={f.name}
                       onChange={(e) => setCreated((all) => all.map((x) => (x.id === f.id ? { ...x, name: e.target.value } : x)))}
                       aria-label={t("Field name")}
@@ -204,7 +207,7 @@ export default function FormsEditor({ tool, items, submit, error, setError }: Ed
                         {f.options.map((o) => <option key={o}>{o}</option>)}
                       </select>
                     ) : (
-                      <input className="input" value={String(values[f.name] ?? "")} onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))} />
+                      <IconInput icon="pencil" value={String(values[f.name] ?? "")} onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))} />
                     )}
                   </label>
                 ))}

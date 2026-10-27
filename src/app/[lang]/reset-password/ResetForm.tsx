@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { resetPassword, type AuthState } from "@/app/actions/auth";
 import { AuthCard, FormError } from "@/components/AuthForm";
 import { useT } from "@/i18n/client";
+import { IconInput } from "@/components/ui/IconInput";
 
 export function ResetForm({ token }: { token: string }) {
   const t = useT();
@@ -15,12 +16,12 @@ export function ResetForm({ token }: { token: string }) {
         <input type="hidden" name="token" value={token} />
         <label className="block text-sm">
           <span className="mb-1 block font-semibold">{t("New password")}</span>
-          <input className="input" name="password" type="password" autoComplete="new-password" minLength={8} required />
+          <IconInput icon="lock" name="password" type="password" autoComplete="new-password" minLength={8} maxLength={200} required />
           <span className="mt-1 block text-xs text-muted">{t("At least 8 characters.")}</span>
         </label>
         <label className="block text-sm">
           <span className="mb-1 block font-semibold">{t("Repeat password")}</span>
-          <input className="input" name="repeat" type="password" autoComplete="new-password" minLength={8} required />
+          <IconInput icon="lock" name="repeat" type="password" autoComplete="new-password" minLength={8} maxLength={200} required />
         </label>
         <button className="btn-primary w-full" disabled={pending}>{pending ? t("Please wait…") : t("Save new password")}</button>
       </form>

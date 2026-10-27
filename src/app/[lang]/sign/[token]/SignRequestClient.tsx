@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { SignWorkspace } from "@/components/tool/SignWorkspace";
 import { useLang, useT } from "@/i18n/client";
+import { IconTextarea } from "@/components/ui/IconInput";
 
 export function SignRequestClient({
   token,
@@ -89,8 +90,9 @@ export function SignRequestClient({
           </div>
           {declining ? (
             <div className="space-y-2 rounded-lg border border-line p-3">
-              <textarea
-                className="input min-h-20 text-sm"
+              <IconTextarea
+                icon="message-2"
+                className="min-h-20 text-sm"
                 placeholder={t("Why are you declining? (optional)")}
                 value={reason}
                 maxLength={500}

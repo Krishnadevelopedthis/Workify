@@ -6,6 +6,7 @@ import { isAdmin } from "@/server/auth";
 import { db } from "@/server/db";
 import { ActionButton } from "../ActionButton";
 import { AdminTitle, fmtDate, Table, Td } from "../ui";
+import { IconInput } from "@/components/ui/IconInput";
 
 type Row = {
   id: number;
@@ -42,7 +43,7 @@ export default async function AdminUsers({ searchParams }: PageProps<"/[lang]/ad
         subtitle={t("Showing up to 200 users, newest first.")}
         action={
           <form className="flex gap-2">
-            <input className="input !py-1.5 text-sm" name="q" defaultValue={q} placeholder={t("Search name or email")} />
+            <IconInput icon="search" type="search" className="!py-1.5 text-sm" name="q" defaultValue={q} placeholder={t("Search name or email")} />
             <button className="btn-secondary !py-1.5 text-sm">{t("Search")}</button>
           </form>
         }

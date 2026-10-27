@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useT } from "@/i18n/client";
 import { optionVisible, POSITION_VALUES, type ToolOption } from "@/lib/tools";
+import { IconInput } from "@/components/ui/IconInput";
 
 export type OptionValues = Record<string, string | number | boolean>;
 
@@ -42,7 +43,7 @@ function MultiPicker({
           </span>
         ))}
       </div>
-      <input className="input mb-2 !py-1.5 text-sm" placeholder={t("Search languages")} value={query} onChange={(e) => setQuery(e.target.value)} />
+      <IconInput icon="search" type="search" wrapperClassName="mb-2" className="!py-1.5 text-sm" placeholder={t("Search languages")} value={query} onChange={(e) => setQuery(e.target.value)} />
       <div className="max-h-56 space-y-0.5 overflow-y-auto rounded-lg border border-line p-1.5">
         {shown.map((o) => {
           const checked = selected.includes(o.value);
@@ -108,8 +109,8 @@ export function OptionsForm({
           )}
           {(o.type === "text" || o.type === "password") && (
             <>
-              <input
-                className="input"
+              <IconInput
+                icon={o.type === "password" ? "lock" : "pencil"}
                 type={o.type}
                 value={String(values[o.key] ?? "")}
                 placeholder={o.placeholder}

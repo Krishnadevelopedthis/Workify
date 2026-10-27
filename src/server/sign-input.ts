@@ -3,15 +3,9 @@ import { PDFDocument } from "pdf-lib";
 import type { User } from "./auth";
 import { safeName } from "./jobs";
 import { MAX_SIGNERS, type NewSigner } from "./sign-requests";
+import { cleanLine, cleanText, isEmail, normalizeEmail } from "@/lib/validation";
 
 // Validation of a new signature request, used by the website.
-
-const EMAIL_RE = /^[^\s@\p{Cc}]+@[^\s@\p{Cc}]+\.[^\s@\p{Cc}]+$/u;
-
-/** Names go into email subjects and the audit trail: control characters and line or paragraph separators become one space. */
-function cleanLine(v: unknown, max: number) {
-  return String(v ?? "").replace(/[\p{Cc}\p{Zl}\p{Zp}]+/gu, " ").trim().slice(0, max);
-}
 
 export class SignInputError extends Error {
   constructor(
@@ -36,9 +30,9 @@ export function parseSigners(raw: unknown): NewSigner[] {
   const seen = new Set<string>();
   return raw.map((s) => {
     const name = cleanLine((s as NewSigner)?.name, 100);
-    const email = String((s as NewSigner)?.email ?? "").trim().toLowerCase().slice(0, 254) || null;
+    const email = normalizeEmail((s as NewSigner)?.email) || null;
     if (!name) throw new SignInputError("Enter a name for every signer.");
-    if (email && !EMAIL_RE.test(email)) throw new SignInputError('"{email}" is not a valid email address.', { email });
+    if (email && !isEmail(email)) throw new SignInputError('"{email}" is not a valid email address.', { email });
     if (email && seen.has(email)) throw new SignInputError('"{email}" is listed twice.', { email });
     if (email) seen.add(email);
     return { name, email };
@@ -87,8 +81,7 @@ export async function validateSignInput(opts: {
     fileName: safeName(file.name),
     bytes,
     signers,
-    // Line breaks and tabs are fine in the message body; other control characters are not.
-    message: String(opts.message ?? "").replace(/\r\n?/g, "\n").replace(/[^\P{Cc}\n\t]/gu, "").trim().slice(0, 1000),
+    message: cleanText(opts.message, 1000),
     ordered: opts.ordered === true || opts.ordered === "true",
     reminderDays: [0, 1, 2, 3, 7].includes(days) ? days : 0,
     senderName,

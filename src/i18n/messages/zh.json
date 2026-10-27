@@ -1228,5 +1228,7 @@
  "Your workflow is complete!": "工作流已完成！",
  "Your Workify account and its data (workflows, templates and signature requests) have been deleted.": "您的 Workify 账户及其数据（工作流、模板和签名请求）已删除。",
  "Your Workify account has been deleted": "您的 Workify 账户已删除",
- "Your Workify password was changed": "您的 Workify 密码已更改"
+ "Your Workify password was changed": "您的 Workify 密码已更改",
+ "Show password": "显示密码",
+ "Hide password": "隐藏密码"
 }

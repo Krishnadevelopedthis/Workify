@@ -1228,5 +1228,7 @@
  "Your workflow is complete!": "ワークフローが完了しました！",
  "Your Workify account and its data (workflows, templates and signature requests) have been deleted.": "Workify アカウントとそのデータ（作業手順、テンプレート、署名依頼）を削除しました。",
  "Your Workify account has been deleted": "Workify アカウントを削除しました",
- "Your Workify password was changed": "Workify のパスワードが変更されました"
+ "Your Workify password was changed": "Workify のパスワードが変更されました",
+ "Show password": "パスワードを表示",
+ "Hide password": "パスワードを非表示"
 }

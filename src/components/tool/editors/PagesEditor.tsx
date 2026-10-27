@@ -6,6 +6,7 @@ import { Icon } from "../../Icon";
 import { Workspace } from "../GenericWorkspace";
 import { LazyVisible, PdfPage, usePdf } from "../PdfPage";
 import type { EditorProps } from "../ToolRunner";
+import { IconInput } from "@/components/ui/IconInput";
 
 /** [1,2,3,5] -> "1-3, 5" */
 export function toRanges(pages: number[]) {
@@ -107,8 +108,8 @@ export default function PagesEditor({ tool, items, submit, error, setError }: Ed
           </p>
           <label className="block text-sm">
             <span className="mb-1 block font-semibold">{removing ? t("Pages to remove") : t("Pages to extract")}</span>
-            <input
-              className="input"
+            <IconInput
+              icon="list-numbers"
               value={text}
               placeholder="1, 3-5"
               onChange={(e) => {

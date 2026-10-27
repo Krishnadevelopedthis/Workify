@@ -12,6 +12,7 @@ import { Workspace } from "../GenericWorkspace";
 import { defaultValues, OptionsForm } from "../OptionsForm";
 import { useFilePicker } from "../SelectFiles";
 import type { EditorProps } from "../ToolRunner";
+import { IconInput } from "@/components/ui/IconInput";
 
 type Step = WorkflowStep & { key: number };
 type Saved = { id: number | string; name: string; steps: WorkflowStep[] };
@@ -176,7 +177,7 @@ export default function WorkflowEditor({ tool, items, setItems, addFiles, submit
           <div>
             <p className="mb-2 text-sm font-semibold">{t("Save this workflow")}</p>
             <div className="flex gap-2">
-              <input className="input" value={name} onChange={(e) => setName(e.target.value)} aria-label={t("Workflow name")} />
+              <IconInput icon="pencil" wrapperClassName="min-w-0 flex-1" value={name} onChange={(e) => setName(e.target.value)} aria-label={t("Workflow name")} />
               <button className="btn-secondary !px-3" onClick={save} title={t("Save")}><Icon name="device-floppy" size={18} /></button>
             </div>
             {notice && <p className="mt-2 text-xs text-[#4a8a32]">{notice}</p>}

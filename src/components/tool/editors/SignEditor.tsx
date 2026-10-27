@@ -7,6 +7,7 @@ import { Link } from "@/i18n/Link";
 import { Icon } from "../../Icon";
 import { SignWorkspace } from "../SignWorkspace";
 import { ErrorBanner, type EditorProps } from "../ToolRunner";
+import { IconInput, IconSelect, IconTextarea } from "@/components/ui/IconInput";
 
 function ModeSwitch({ mode, setMode }: { mode: "me" | "others"; setMode: (m: "me" | "others") => void }) {
   const t = useT();
@@ -197,9 +198,10 @@ function RequestForm({ file, onBack }: { file: File; onBack: () => void }) {
             {rows.map((r, i) => (
               <div key={r.key} className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg text-xs font-bold">{i + 1}</span>
-                <input className="input" placeholder={t("Name")} value={r.name} onChange={(e) => update(r.key, { name: e.target.value })} maxLength={100} />
-                <input
-                  className="input"
+                <IconInput icon="user" wrapperClassName="min-w-0 flex-1" placeholder={t("Name")} value={r.name} onChange={(e) => update(r.key, { name: e.target.value })} maxLength={100} />
+                <IconInput
+                  icon="mail"
+                  wrapperClassName="min-w-0 flex-1"
                   type="email"
                   placeholder={canEmail ? t("Email (optional)") : t("Email: log in to invite")}
                   value={r.email}
@@ -242,28 +244,28 @@ function RequestForm({ file, onBack }: { file: File; onBack: () => void }) {
         {session === null && (
           <label className="block text-sm">
             <span className="mb-1 block font-semibold">{t("Your name")}</span>
-            <input className="input" value={senderName} onChange={(e) => setSenderName(e.target.value)} maxLength={100} required />
+            <IconInput icon="user" value={senderName} onChange={(e) => setSenderName(e.target.value)} maxLength={100} required />
           </label>
         )}
 
         <label className="block text-sm">
           <span className="mb-1 block font-semibold">{t("Message to the signers")}</span>
-          <textarea className="input min-h-24" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={1000} />
+          <IconTextarea icon="message-2" className="min-h-24" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={1000} />
         </label>
 
         {canEmail && (
           <label className="block text-sm">
             <span className="mb-1 block font-semibold">{t("Automatic reminders")}</span>
-            <select className="input" value={reminderDays} onChange={(e) => setReminderDays(Number(e.target.value))}>
+            <IconSelect icon="clock" value={reminderDays} onChange={(e) => setReminderDays(Number(e.target.value))}>
               <option value={0}>{t("Off")}</option>
               {[1, 2, 3, 7].map((d) => <option key={d} value={d}>{t("Every {days} day(s)", { days: d })}</option>)}
-            </select>
+            </IconSelect>
           </label>
         )}
 
         {session && (
           <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
-            <input className="input max-w-60 !py-1.5 text-sm" placeholder={t("Template name")} value={templateName} onChange={(e) => setTemplateName(e.target.value)} maxLength={80} />
+            <IconInput icon="template" wrapperClassName="max-w-60" className="!py-1.5 text-sm" placeholder={t("Template name")} value={templateName} onChange={(e) => setTemplateName(e.target.value)} maxLength={80} />
             <button type="button" className="btn-secondary !py-1.5 text-sm" onClick={storeTemplate}>
               <Icon name="template" size={16} /> {t("Save as template")}
             </button>

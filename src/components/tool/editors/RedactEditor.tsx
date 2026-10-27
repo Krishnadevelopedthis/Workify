@@ -8,6 +8,7 @@ import { DrawLayer, PageNav, type Box } from "../DrawLayer";
 import { Workspace } from "../GenericWorkspace";
 import { PdfPage, rectToPdf, rectToScreen, useFitWidth, usePdf } from "../PdfPage";
 import type { EditorProps } from "../ToolRunner";
+import { IconInput } from "@/components/ui/IconInput";
 
 type Area = { id: number; page: number; rect: ReturnType<typeof rectToPdf> };
 let nextId = 0;
@@ -78,8 +79,9 @@ export default function RedactEditor({ tool, items, submit, error, setError }: E
           <div>
             <p className="mb-2 text-sm font-semibold">{t("Search and redact text")}</p>
             <div className="flex gap-2">
-              <input
-                className="input"
+              <IconInput
+                icon="search"
+                wrapperClassName="min-w-0 flex-1"
                 placeholder={t("e.g. a name or account number")}
                 value={term}
                 onChange={(e) => setTerm(e.target.value)}

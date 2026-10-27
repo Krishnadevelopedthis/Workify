@@ -10,6 +10,7 @@ import { Workspace } from "./GenericWorkspace";
 import { elId, ElementsLayer, toOverlay, type El } from "./overlay";
 import { PdfPage, toPdf, useFitWidth, usePdf } from "./PdfPage";
 import { SignatureModal, type SignatureImage } from "./SignatureModal";
+import { IconInput } from "@/components/ui/IconInput";
 
 type Placeable = "signature" | "initials" | "name" | "date" | "text" | "stamp";
 
@@ -144,7 +145,7 @@ export function SignWorkspace({
             {sidebarTop}
             <label className="block text-sm">
               <span className="mb-1 block font-semibold">{t("Full name")}</span>
-              <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("Your full name")} />
+              <IconInput icon="user" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("Your full name")} />
             </label>
             <div>
               <p className="mb-2 text-sm font-semibold">{t("Fields")}</p>
@@ -175,7 +176,7 @@ export function SignWorkspace({
             {sel?.kind === "text" && (
               <label className="block text-sm">
                 <span className="mb-1 block font-semibold">{t("Selected text")}</span>
-                <input className="input" value={sel.text} onChange={(e) => update({ ...sel, text: e.target.value })} />
+                <IconInput icon="typography" value={sel.text} onChange={(e) => update({ ...sel, text: e.target.value })} />
               </label>
             )}
             {sel && (

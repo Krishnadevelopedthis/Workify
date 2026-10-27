@@ -4,6 +4,7 @@ import { Caveat, Dancing_Script, Great_Vibes } from "next/font/google";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/i18n/client";
 import { Icon } from "../Icon";
+import { IconInput } from "@/components/ui/IconInput";
 
 // Only the signature modal uses these, so they must not be preloaded on every page.
 const dancing = Dancing_Script({ subsets: ["latin"], weight: "600", preload: false });
@@ -139,7 +140,7 @@ export function SignatureModal({
         <div className="p-6">
           {tab === "type" && (
             <>
-              <input className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder={t("Your name")} autoFocus />
+              <IconInput icon="signature" value={text} onChange={(e) => setText(e.target.value)} placeholder={t("Your name")} autoFocus />
               <div className="mt-4 grid gap-2">
                 {FONTS.map((f, i) => (
                   <button key={i} onClick={() => setFont(i)} className={`${f.className} rounded-lg border px-4 py-2 text-start text-3xl ${font === i ? "border-brand bg-brand/5" : "border-line"}`} style={{ color: ink }}>

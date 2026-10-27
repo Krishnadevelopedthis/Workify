@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { testSmtp } from "@/app/actions/admin";
 import { useT } from "@/i18n/client";
+import { IconInput } from "@/components/ui/IconInput";
 
 export function SmtpTest({ defaultTo }: { defaultTo: string }) {
   const t = useT();
@@ -11,7 +12,7 @@ export function SmtpTest({ defaultTo }: { defaultTo: string }) {
   const [pending, start] = useTransition();
   return (
     <div className="mt-3 flex flex-wrap gap-2">
-      <input className="input max-w-64 !py-1.5 text-sm" type="email" value={to} onChange={(e) => setTo(e.target.value)} />
+      <IconInput icon="mail" wrapperClassName="max-w-64" className="!py-1.5 text-sm" type="email" value={to} onChange={(e) => setTo(e.target.value)} />
       <button
         className="btn-secondary !py-1.5 text-sm"
         disabled={pending}

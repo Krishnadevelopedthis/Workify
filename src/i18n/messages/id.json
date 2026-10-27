@@ -1228,5 +1228,7 @@
  "Your workflow is complete!": "Alur kerja Anda selesai!",
  "Your Workify account and its data (workflows, templates and signature requests) have been deleted.": "Akun Workify Anda dan datanya (alur kerja, templat, dan permintaan tanda tangan) sudah dihapus.",
  "Your Workify account has been deleted": "Akun Workify Anda sudah dihapus",
- "Your Workify password was changed": "Kata sandi Workify Anda sudah diubah"
+ "Your Workify password was changed": "Kata sandi Workify Anda sudah diubah",
+ "Show password": "Tampilkan kata sandi",
+ "Hide password": "Sembunyikan kata sandi"
 }

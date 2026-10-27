@@ -35,6 +35,8 @@ const names = [
   "inbox", "plug", "cloud-upload", "list-check", "external-link", "user-check", "users-group",
   "arrow-up", "arrow-down", "lock-check", "file-certificate", "player-skip-forward", "dots",
   "toggle-right", "brand-zapier", "circle-check", "progress", "terminal-2", "receipt",
+  // form fields
+  "message-2", "tag",
 ];
 
 const subset = getIcons(tabler, names);

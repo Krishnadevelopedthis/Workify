@@ -26,10 +26,10 @@ import {
   unrecord,
   VERIFY_RESENDS_PER_DAY,
 } from "./auth-guards";
+import { cleanLine, isEmail, normalizeEmail } from "@/lib/validation";
 
 export type AuthState = { error?: string; ok?: boolean; values?: { name?: string; email?: string } };
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_PASSWORD = 200; // scrypt work must stay bounded
 
 // A real hash of a random password, so failed logins for unknown emails take
@@ -45,15 +45,15 @@ function passwordProblem(password: string, t: (s: string, v?: Record<string, num
 
 export async function signup(_prev: AuthState, form: FormData): Promise<AuthState> {
   const { t, lang } = await requestT();
-  const name = String(form.get("name") ?? "").trim().slice(0, 100);
-  const email = String(form.get("email") ?? "").trim().toLowerCase().slice(0, 254);
+  const name = cleanLine(form.get("name"), 100);
+  const email = normalizeEmail(form.get("email"));
   const password = String(form.get("password") ?? "");
   const values = { name, email };
 
   const limited = rateLimit("auth", await headers());
   if (limited) return { error: t(limited), values };
   if (name.length < 2) return { error: t("Please enter your name."), values };
-  if (!EMAIL_RE.test(email)) return { error: t("Please enter a valid email address."), values };
+  if (!isEmail(email)) return { error: t("Please enter a valid email address."), values };
   const problem = passwordProblem(password, t);
   if (problem) return { error: problem, values };
 
@@ -71,7 +71,7 @@ export async function signup(_prev: AuthState, form: FormData): Promise<AuthStat
 
 export async function login(_prev: AuthState, form: FormData): Promise<AuthState> {
   const { t, lang } = await requestT();
-  const email = String(form.get("email") ?? "").trim().toLowerCase().slice(0, 254);
+  const email = normalizeEmail(form.get("email"));
   const password = String(form.get("password") ?? "").slice(0, MAX_PASSWORD);
   const h = await headers();
   const limited = rateLimit("auth", h);
@@ -110,10 +110,10 @@ export async function logout() {
 
 export async function requestPasswordReset(_prev: AuthState, form: FormData): Promise<AuthState> {
   const { t, lang } = await requestT();
-  const email = String(form.get("email") ?? "").trim().toLowerCase().slice(0, 254);
+  const email = normalizeEmail(form.get("email"));
   const limited = rateLimit("auth", await headers());
   if (limited) return { error: t(limited), values: { email } };
-  if (!EMAIL_RE.test(email)) return { error: t("Please enter a valid email address."), values: { email } };
+  if (!isEmail(email)) return { error: t("Please enter a valid email address."), values: { email } };
   const row = db.prepare("SELECT id, name FROM users WHERE email = ? AND disabled_at IS NULL").get(email) as
     | { id: number; name: string }
     | undefined;
@@ -199,7 +199,7 @@ export async function updateProfile(_prev: AuthState, form: FormData): Promise<A
   const { t, lang } = await requestT();
   const user = await currentUser();
   if (!user) return { error: t("Please log in again.") };
-  const name = String(form.get("name") ?? "").trim().slice(0, 100);
+  const name = cleanLine(form.get("name"), 100);
   if (name.length < 2) return { error: t("Please enter your name.") };
   db.prepare("UPDATE users SET name = ?, lang = ? WHERE id = ?").run(name, lang, user.id);
   return { ok: true };
@@ -211,9 +211,9 @@ export async function changeEmail(_prev: AuthState, form: FormData): Promise<Aut
   if (!user) return { error: t("Please log in again.") };
   const limited = rateLimit("email", await headers(), `change:${user.id}`);
   if (limited) return { error: t(limited) };
-  const email = String(form.get("email") ?? "").trim().toLowerCase().slice(0, 254);
+  const email = normalizeEmail(form.get("email"));
   const password = String(form.get("password") ?? "").slice(0, MAX_PASSWORD);
-  if (!EMAIL_RE.test(email)) return { error: t("Please enter a valid email address.") };
+  if (!isEmail(email)) return { error: t("Please enter a valid email address.") };
   if (email === user.email.toLowerCase()) return { error: t("This is already your email address.") };
   const row = db.prepare("SELECT password_hash FROM users WHERE id = ?").get(user.id) as { password_hash: string };
   if (!(await verifyPassword(password, row.password_hash))) return { error: t("Your current password is incorrect.") };

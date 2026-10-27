@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { joinWaitlist, type WaitlistState } from "@/app/actions/premium";
 import { Icon } from "@/components/Icon";
 import { useT } from "@/i18n/client";
+import { IconInput } from "@/components/ui/IconInput";
 
 /** "Tell me when Premium launches" email form. */
 export function PremiumWaitlist() {
@@ -18,7 +19,7 @@ export function PremiumWaitlist() {
   }
   return (
     <form action={action} className="mt-8 space-y-2">
-      <input className="input" name="email" type="email" placeholder={t("Your email")} required autoComplete="email" />
+      <IconInput icon="mail" name="email" type="email" maxLength={254} placeholder={t("Your email")} required autoComplete="email" />
       {state.error && <p className="text-sm text-brand">{state.error}</p>}
       <button className="btn-secondary w-full" disabled={pending}>
         <Icon name="bell" size={18} /> {pending ? t("Please wait…") : t("Notify me")}
