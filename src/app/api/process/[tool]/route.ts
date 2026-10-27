@@ -85,7 +85,6 @@ async function handleUpload(
       files: form.getAll("files").filter((f): f is File => f instanceof File),
       options,
       extras,
-      source: "web",
     });
     return Response.json(result);
   } catch (e) {

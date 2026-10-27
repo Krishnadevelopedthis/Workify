@@ -42,7 +42,6 @@ export default async function AdminDashboard() {
         <Stat icon="users" label={t("Users ({verified} verified, +{new} this week)", { verified: s.verifiedUsers, new: s.newUsers7d })} value={s.users} />
         <Stat icon="bolt" label={t("Tasks in 24 h ({failed} failed)", { failed: s.failed24h })} value={s.tasks24h} tone={s.failed24h ? "warn" : undefined} />
         <Stat icon="signature" label={t("Signature requests in progress ({done} completed)", { done: s.completedSignatures })} value={s.pendingSignatures} />
-        <Stat icon="code" label={t("API tasks this week ({keys} active keys)", { keys: s.apiKeys })} value={s.apiTasks7d} />
         <Stat icon="inbox" label={t("Unanswered messages")} value={s.openMessages} tone={s.openMessages ? "warn" : undefined} />
         <Stat icon="mail" label={t("Emails queued / failed / not sent (no SMTP)")} value={`${s.queuedEmails} / ${s.failedEmails} / ${s.loggedEmails}`} tone={s.failedEmails ? "bad" : undefined} />
         <Stat icon="alert-circle" label={t("Errors in 24 h")} value={s.errors24h} tone={s.errors24h ? "bad" : undefined} />

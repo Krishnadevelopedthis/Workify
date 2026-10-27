@@ -107,15 +107,6 @@ jobs:
           check pdf-to-powerpoint -F files=@scan.pdf -F 'options={"ocr":true,"language":"eng"}'
           expect_text .pptx
 
-      - name: The developer API must stay removed
-        run: |
-          set -euo pipefail
-          for path in me tools signatures; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3000/api/v1/$path")
-            echo "/api/v1/$path -> HTTP $code"
-            [ "$code" = "404" ]
-          done
-
       - name: Smoke test a signature request with two signers
         run: |
           set -euo pipefail

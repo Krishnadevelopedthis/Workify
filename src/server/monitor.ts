@@ -19,11 +19,10 @@ export function logError(source: string, message: string, detail?: unknown) {
   }
 }
 
-export function recordTask(tool: string, source: "web" | "api", ok: boolean, ms: number, bytes: number) {
+export function recordTask(tool: string, ok: boolean, ms: number, bytes: number) {
   try {
-    db.prepare("INSERT INTO task_stats (tool, source, ok, ms, bytes, at) VALUES (?, ?, ?, ?, ?, ?)").run(
+    db.prepare("INSERT INTO task_stats (tool, source, ok, ms, bytes, at) VALUES (?, 'web', ?, ?, ?, ?)").run(
       tool,
-      source,
       ok ? 1 : 0,
       Math.round(ms),
       bytes,

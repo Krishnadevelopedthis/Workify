@@ -139,7 +139,7 @@ A template with every variable is in [.env.example](.env.example).
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | **Set in production.** The public URL, used in emailed links (verification, password reset, signing invitations), canonical links, the sitemap, social previews and the API docs. Build time. |
+| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | **Set in production.** The public URL, used in emailed links (verification, password reset, signing invitations), canonical links, the sitemap, and social previews. Build time. |
 | `WORKIFY_SECRET` | random value stored in `data/secret.key` | **Recommended.** Server secret that encrypts signing links, so reminders can re-send them. Use a long random string (`openssl rand -base64 32`). Changing it breaks links already emailed. If you leave it unset, keep `data/secret.key` with your backups. |
 
 ### Accounts and admin

@@ -39,7 +39,7 @@ export function AuthForm({ mode, next }: { mode: "login" | "signup"; next: strin
   return (
     <AuthCard
       title={isSignup ? t("Create new account") : t("Login to your account")}
-      subtitle={isSignup ? t("Save workflows, request signatures and use the API. It's free.") : t("Welcome back to Workify.")}
+      subtitle={isSignup ? t("Save workflows and request signatures. It's free.") : t("Welcome back to Workify.")}
     >
       <FormError message={state.error} />
       <form action={action} className="mt-6 space-y-4">

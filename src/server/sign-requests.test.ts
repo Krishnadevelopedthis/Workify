@@ -62,7 +62,6 @@ vi.mock("./monitor", () => ({ logError: vi.fn() }));
 vi.mock("./engines", () => ({ ToolError: class extends Error {} }));
 vi.mock("./pdf-helpers", () => ({ drawableText: (_f: unknown, s: string) => s }));
 vi.mock("./pdf-sign", () => ({ certificateInfo: vi.fn(), sealPdf: vi.fn() }));
-vi.mock("./webhooks", () => ({ dispatchWebhook: vi.fn() }));
 vi.mock("./sign-input", () => ({ inviteLimitError: (max: number) => new Error(`invite limit ${max}`) }));
 
 const sr = await import("./sign-requests");

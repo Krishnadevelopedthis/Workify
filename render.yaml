@@ -17,7 +17,7 @@ services:
       - key: WORKIFY_TRUST_PROXY
         value: "1"
       - key: WORKIFY_SECRET
-        generateValue: true # random secret for signing links and webhook signatures
+        generateValue: true # random secret for encrypting signing links
       - key: WORKIFY_ADMIN_EMAILS
         sync: false # your email; admin once it is verified
       # Outgoing email (verification, password reset, signing invitations).

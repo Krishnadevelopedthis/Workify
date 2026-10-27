@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   // Without an account the PDF is stored for strangers: a smaller limit (see sign-requests.ts).
   const maxBytes = user ? 100 * MB : ANON_MAX_BYTES;
   if (Number(request.headers.get("content-length") ?? 0) > maxBytes + MB) return tooLarge(t, !user);
-  // Also per account, shared with the developer API, so several IPs do not add up.
+  // Also per account, so several IPs do not add up.
   const limited = rateLimit("signRequest", request.headers, user ? `user:${user.id}` : undefined);
   if (limited) return tooMany(t(limited));
   const form = await request.formData().catch(() => null);

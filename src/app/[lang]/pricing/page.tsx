@@ -22,7 +22,6 @@ const PREMIUM_FEATURES = [
   "Priority processing queue",
   "Your logo on signature emails",
   "Team accounts with shared workflows",
-  "Higher API limits",
   "Priority support",
 ];
 

@@ -16,7 +16,7 @@ export default async function PressPage() {
     <InfoPage icon="speakerphone" title={t("Press")} subtitle={t("Resources for journalists and partners.")}>
       <div className="prose-page">
         <h2>{t("About Workify")}</h2>
-        <p>{t("Workify is a free, web-based suite of PDF tools: merge, split, compress, convert, edit, sign, redact and more, with reusable workflows, a developer API and installable desktop and mobile apps, in 11 languages.")}</p>
+        <p>{t("Workify is a free, web-based suite of PDF tools: merge, split, compress, convert, edit, sign, redact and more, with reusable workflows and installable desktop and mobile apps, in 11 languages.")}</p>
         <h2>{t("Brand")}</h2>
         <p>{t("Please write the name as “Workify”. The trailing “fy” is shown in our accent orange.")}</p>
       </div>

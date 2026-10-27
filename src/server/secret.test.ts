@@ -77,18 +77,3 @@ describe("seal / unseal", () => {
     expect(two.unseal(sealed)).toBeNull();
   });
 });
-
-describe("derive", () => {
-  it("is stable per label and secret", async () => {
-    vi.stubEnv("WORKIFY_SECRET", "secret-one");
-    const one = await import("./secret");
-    expect(one.derive("webhook:1")).toBe(one.derive("webhook:1"));
-    expect(one.derive("webhook:1")).not.toBe(one.derive("webhook:2"));
-    expect(one.derive("webhook:1")).toMatch(/^[\w-]{43}$/);
-
-    vi.resetModules();
-    vi.stubEnv("WORKIFY_SECRET", "secret-two");
-    const two = await import("./secret");
-    expect(two.derive("webhook:1")).not.toBe(one.derive("webhook:1"));
-  });
-});

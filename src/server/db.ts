@@ -251,6 +251,16 @@ const MIGRATIONS: ((db: DatabaseSync) => void)[] = [
       CREATE INDEX idx_page_stats_day ON page_stats(day);
     `);
   },
+  // v4: the developer API was removed. Its keys, webhooks and task records go;
+  // task_stats keeps its source column (only "web" is written now).
+  (db) => {
+    db.exec(`
+      DROP TABLE IF EXISTS api_tasks;
+      DROP TABLE IF EXISTS webhooks;
+      DROP TABLE IF EXISTS api_keys;
+      DELETE FROM task_stats WHERE source = 'api';
+    `);
+  },
 ];
 
 function open() {

@@ -4,7 +4,7 @@ import type { User } from "./auth";
 import { safeName } from "./jobs";
 import { MAX_SIGNERS, type NewSigner } from "./sign-requests";
 
-// Validation of a new signature request, shared by the website and the API.
+// Validation of a new signature request, used by the website.
 
 const EMAIL_RE = /^[^\s@\p{Cc}]+@[^\s@\p{Cc}]+\.[^\s@\p{Cc}]+$/u;
 

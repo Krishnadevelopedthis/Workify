@@ -604,7 +604,7 @@ async function finalize(request: SignRequest) {
     await copyFile(path.join(dir, "current.pdf"), path.join(dir, "final.pdf"));
   }
   // Only a still-pending request completes: a cancel that got in first wins,
-  // and completion (event, webhook, emails) happens exactly once.
+  // and completion (event, emails) happens exactly once.
   const completed = db
     .prepare("UPDATE sign_requests SET status = 'completed', completed_at = ? WHERE id = ? AND status = 'pending'")
     .run(Date.now(), request.id).changes;

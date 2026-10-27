@@ -1,12 +1,12 @@
 import "server-only";
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { DATA_DIR } from "./db";
 
 // Server secret for values that must be readable again later (signing links
-// that are emailed more than once) and for webhook signatures. Set
-// WORKIFY_SECRET in production; otherwise one is generated in data/secret.key.
+// that are emailed more than once). Set WORKIFY_SECRET in production;
+// otherwise one is generated in data/secret.key.
 
 const KEY_FILE = path.join(DATA_DIR, "secret.key");
 let key: Buffer | null = null;
@@ -20,11 +20,6 @@ function serverKey(): Buffer {
     writeFileSync(KEY_FILE, randomBytes(32).toString("base64"), { mode: 0o600 });
   }
   return (key = createHash("sha256").update(readFileSync(KEY_FILE, "utf8").trim()).digest());
-}
-
-/** A stable secret for one purpose (e.g. a user's webhook signing secret). */
-export function derive(label: string): string {
-  return createHmac("sha256", serverKey()).update(label).digest("base64url");
 }
 
 /** AES-256-GCM encryption to a compact string. */

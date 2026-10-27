@@ -12,8 +12,7 @@ import { logError, recordTask } from "./monitor";
 import { PROCESSORS, type Ctx, type Output } from "./processors";
 import { BusyError, heavyGate } from "./rate-limit";
 
-// Runs one tool on uploaded files. Shared by the website (/api/process) and
-// the developer API (/api/v1).
+// Runs one tool on uploaded files for the website (/api/process).
 
 export const LIMITS = {
   maxFile: 200 * 1024 * 1024,
@@ -30,7 +29,6 @@ export type TaskInput = {
   options: Record<string, unknown>;
   /** Extra uploads (watermark image, signatures) by key. */
   extras: [string, File][];
-  source: "web" | "api";
 };
 
 export type TaskResult = {
@@ -125,7 +123,7 @@ export async function runTask(input: TaskInput): Promise<TaskResult> {
     const size = (await stat(/*turbopackIgnore: true*/ download.path)).size;
 
     succeeded = true;
-    recordTask(input.slug, input.source, true, Date.now() - started, inputSize);
+    recordTask(input.slug, true, Date.now() - started, inputSize);
     return {
       jobId: job.id,
       fileName: download.name,
@@ -136,7 +134,7 @@ export async function runTask(input: TaskInput): Promise<TaskResult> {
       continuable: outputs.length === 1 && download.name.toLowerCase().endsWith(".pdf"),
     };
   } catch (e) {
-    recordTask(input.slug, input.source, false, Date.now() - started, inputSize);
+    recordTask(input.slug, false, Date.now() - started, inputSize);
     if (e instanceof TaskError) throw e;
     if (e instanceof ToolError) throw new TaskError(400, e.template, e.vars);
     if (e instanceof EngineMissingError || e instanceof BusyError) throw new TaskError(503, e.message);
