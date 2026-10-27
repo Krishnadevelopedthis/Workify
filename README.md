@@ -1,122 +1,145 @@
+<div align="center">
+
 # Workify
 
-Free online PDF tools: merge, split, remove and extract pages, compress, convert
-(Word, PowerPoint, Excel, JPG, HTML, PDF/A, Markdown — with OCR for scanned
-PDFs), edit, sign, watermark, redact, compare, OCR, forms, scan-to-PDF and
-reusable workflows. Built with Next.js 16. Every feature is free; there are no
-paid plans (the Premium card on the pricing page is a "coming soon" waitlist).
+**Every PDF tool you need, in one free place.**
 
-## Features
+Merge, split, compress, convert, edit, sign, redact and organise PDFs, right in the browser. No installs, no watermarks, no sign-up needed.
 
-- **30+ PDF tools**, batch processing, files up to 200 MB each.
-- **OCR** in 34 languages, also as an option of PDF → Word, PowerPoint and Excel
-  for scanned documents.
-- **Signature requests**: up to 20 signers, optional signing order, email
-  invitations and reminders, decline, reusable templates, an audit trail page
-  and a PKCS#7 digital seal on the final PDF.
-- **Accounts**: sign up, email verification, password reset, change email,
-  delete account; saved workflows and signature requests.
-- **Admin panel** at `/admin`: users, signature requests, outbox, errors,
-  contact messages, Premium waitlist, backups and a system check.
-- **11 languages** (en, hi, es, fr, de, pt, ar, id, ja, ru, zh). English URLs have
-  no prefix, the others start with the language (`/hi/merge-pdf`); Arabic is
-  right-to-left.
-- **Installable app** (PWA), optional Google Drive / Dropbox open and save.
-- **Health endpoint** `/api/health` and automatic daily database backups.
+🌐 **Live:** [workifyweplay.tech](https://workifyweplay.tech)
 
-## Requirements
+<img src="docs/screenshots/01-home.jpg" alt="Workify home page" width="860">
 
-| Engine | Used for | Windows install |
-|---|---|---|
-| Node.js 24+ | the app (uses the built-in `node:sqlite`) | nodejs.org |
-| Python 3.13 venv in `py/.venv` | PDF→Word/Excel/PPT/Markdown/JPG, redact, OCR | `python -m venv py/.venv` then `py/.venv/Scripts/pip install -r py/requirements.txt` |
-| Ghostscript 10 | compress, PDF/A, OCR | official installer from Artifex |
-| qpdf | protect, unlock, repair | `winget install QPDF.QPDF` |
-| LibreOffice | Word/PPT/Excel→PDF | `winget install TheDocumentFoundation.LibreOffice` |
-| Tesseract | OCR | `winget install UB-Mannheim.TesseractOCR` |
-| Chrome or Edge | HTML→PDF | already on most PCs |
+</div>
 
-Engines are found automatically in their default folders. Override any of them
-with `WORKIFY_GS`, `WORKIFY_QPDF`, `WORKIFY_SOFFICE`, `WORKIFY_TESSERACT`,
-`WORKIFY_PYTHON`, `WORKIFY_CHROME`. The Docker image includes all of them.
+---
 
-## Run
+## What is Workify?
+
+Workify is a free, open web app with 30+ PDF tools under one roof. You drop in a file, pick what you want done, and download the result in seconds. Everything from "join these three PDFs" to "get a contract signed by five people" lives in the same clean interface, in 11 languages.
+
+## Why does it exist?
+
+Working with PDFs is a daily chore for students, freelancers, offices and small businesses, and the usual options are bad:
+
+- Most online tools do **one** thing, so you jump between five different sites.
+- Free tiers come with **watermarks, page limits, daily caps and aggressive upsells**.
+- Many ask you to **upload private documents** to sites you know nothing about.
+- Desktop software is **expensive and heavy** for a task that takes a minute.
+
+Workify puts it all in one place, keeps it free, and treats your files with care: uploads are **deleted automatically after one hour**.
+
+## What problems does it solve?
+
+| Problem | How Workify solves it |
+| --- | --- |
+| "I have 6 PDFs and need one" | **Merge PDF**: drag, reorder, download |
+| "The file is too big to email" | **Compress PDF**: smaller size, readable text |
+| "I only need pages 3 to 7" | **Split / Extract / Remove pages** |
+| "I need it in Word or Excel" | **PDF to Word / PowerPoint / Excel** (and back) |
+| "This is a scan, I can't search or copy it" | **OCR** in 34 languages |
+| "I must fix a typo or add a stamp" | **Edit PDF**, **Watermark**, **Page numbers** |
+| "I need a signature, but printing is a pain" | **Sign PDF** and **signature requests** for up to 20 signers, with a sealed audit trail |
+| "I must hide sensitive details" | **Redact PDF**: removes the content for real, not just a black box |
+| "I do the same 4 steps every week" | **Workflows**: chain tools once, reuse forever |
+| "I'm on my phone" | Installable **PWA**, fully responsive |
+
+## How much time does it save?
+
+Rough, honest estimates for a typical task (your numbers will vary with file size and habits):
+
+| Task | The usual way | With Workify |
+| --- | --- | --- |
+| Merge several PDFs | 5 to 10 min (find a site, upload one by one, fight limits) | **~20 sec** |
+| Shrink a PDF for email | 10 to 15 min of trial and error | **~15 sec** |
+| Get a document signed | Print, sign, scan, send: **20 to 30 min**, or days of back and forth | **~2 min** to send, signers sign online |
+| Convert a PDF to Word | 10+ min of retyping or fixing layout | **~30 sec** |
+| Repeat a multi-step routine | Every time, by hand | **One click** with a saved workflow |
+
+For someone who handles a handful of PDFs a day, that adds up to **roughly 30 to 60 minutes saved every day**, and it stops the hidden cost of tool-hopping and paywalls.
+
+## Screenshots
+
+### Tools
+
+<table>
+<tr>
+<td width="50%"><b>All tools, one page</b><br><img src="docs/screenshots/02-all-tools.jpg" alt="All tools"></td>
+<td width="50%"><b>Merge PDF</b><br><img src="docs/screenshots/03-merge-pdf.jpg" alt="Merge PDF"></td>
+</tr>
+<tr>
+<td><b>Edit PDF</b>: text, images, shapes, drawing<br><img src="docs/screenshots/04-edit-pdf.jpg" alt="Edit PDF"></td>
+<td><b>Organize PDF</b>: reorder, rotate, delete pages<br><img src="docs/screenshots/05-organize-pdf.jpg" alt="Organize PDF"></td>
+</tr>
+<tr>
+<td><b>Compress PDF</b><br><img src="docs/screenshots/06-compress-pdf.jpg" alt="Compress PDF"></td>
+<td><b>Sign PDF</b><br><img src="docs/screenshots/07-sign-pdf.jpg" alt="Sign PDF"></td>
+</tr>
+<tr>
+<td><b>Redact PDF</b><br><img src="docs/screenshots/08-redact-pdf.jpg" alt="Redact PDF"></td>
+<td><b>Features</b><br><img src="docs/screenshots/12-features.jpg" alt="Features"></td>
+</tr>
+</table>
+
+### Accounts, pricing, support
+
+<table>
+<tr>
+<td width="50%"><b>Sign up</b>: icons on every field, show/hide password<br><img src="docs/screenshots/10-signup.jpg" alt="Sign up"></td>
+<td width="50%"><b>Pricing</b><br><img src="docs/screenshots/09-pricing.jpg" alt="Pricing"></td>
+</tr>
+<tr>
+<td><b>Contact</b><br><img src="docs/screenshots/11-contact.jpg" alt="Contact"></td>
+<td><b>Admin panel</b>: usage, users, emails, backups<br><img src="docs/screenshots/14-admin.jpg" alt="Admin panel"></td>
+</tr>
+</table>
+
+### Multi-language and mobile
+
+<table>
+<tr>
+<td width="50%"><b>Hindi (11 languages, incl. RTL Arabic)</b><br><img src="docs/screenshots/13-home-hindi.jpg" alt="Hindi home"></td>
+<td width="25%"><b>Mobile</b><br><img src="docs/screenshots/15-mobile-home.jpg" alt="Mobile home"></td>
+<td width="25%"><b>Mobile tools</b><br><img src="docs/screenshots/16-mobile-tools.jpg" alt="Mobile tools"></td>
+</tr>
+</table>
+
+## Highlights
+
+- **30+ tools**: merge, split, remove/extract pages, compress, convert (Word, PowerPoint, Excel, JPG, HTML, PDF/A, Markdown), edit, sign, watermark, redact, compare, OCR, forms, scan-to-PDF
+- **Big files and batches**: up to 200 MB per file
+- **E-signatures**: request signatures from up to 20 people, with PKCS#7 sealing and an audit trail
+- **Workflows**: save multi-step routines and run them again
+- **Accounts and admin panel** for usage, users, messages, emails and backups
+- **11 languages**, right-to-left layouts included
+- **Google Drive and Dropbox** import
+- **Installable PWA**, works on phone and desktop
+- **Privacy first**: files are removed after 1 hour, rate limiting, scrypt-hashed passwords, strict CSP, SSRF-safe HTML to PDF, daily backups
+
+> Coming soon: AI PDF Summarizer, Translate PDF and a Premium plan.
+
+## Built with
+
+Next.js 16 · React · TypeScript · Tailwind CSS v4 · SQLite · Python, Ghostscript, qpdf, LibreOffice, Tesseract and Chromium for the heavy lifting · Docker and Caddy (automatic HTTPS)
+
+## Run it yourself
 
 ```bash
+cp .env.example .env     # fill in the values
 npm install
-npm run ocr-languages  # once: OCR data for 34 languages into data/tessdata
-npm run dev            # development, http://localhost:3000
-npm test               # unit tests
-npm run build && npx next start -H 127.0.0.1 -p 3000   # production
+npm run dev              # http://localhost:3000
 ```
 
-- Going live: see [DEPLOY.md](DEPLOY.md) (Docker image with every engine included).
-- Optional Google Drive / Dropbox: see [CLOUD_SETUP.md](CLOUD_SETUP.md).
-- All settings are listed in [.env.example](.env.example). Copy it to
-  `.env.local` for development; never commit real values.
+Production setup, environment variables and the cloud checklist are in:
 
-## Configuration (environment variables)
+- [DEPLOY.md](DEPLOY.md): deploying with Docker and Caddy
+- [CLOUD_SETUP.md](CLOUD_SETUP.md): Google Drive, Dropbox and other integrations
+- [.env.example](.env.example): every setting, explained
 
-Everything is optional; the app runs with no settings at all. The full list with
-details is in [DEPLOY.md](DEPLOY.md#environment-variables).
+---
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | public URL for links in emails, canonical links, sitemap (build time) |
-| `WORKIFY_SECRET` | generated in `data/secret.key` | server secret that encrypts signing links |
-| `WORKIFY_ADMIN_EMAILS` | — | comma-separated emails that are admins (once verified) |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | not set, `587` | outgoing email; without `SMTP_HOST` emails stay in the admin outbox |
-| `MAIL_FROM` | `Workify <no-reply@your-host>` | sender address |
-| `WORKIFY_SIGN_P12`, `WORKIFY_SIGN_P12_PASSWORD` | self-signed certificate | your own certificate for the digital seal |
-| `WORKIFY_BACKUP_KEEP` | `14` | daily database backups to keep in `data/backups` |
-| `WORKIFY_TRUST_PROXY` | `1` | reverse proxies in front of the app that append to `X-Forwarded-For` |
-| `WORKIFY_MAX_JOBS` / `WORKIFY_MAX_QUEUE` | `4` / `20` | conversions running at once / allowed to wait |
-| `WORKIFY_PY_WORKERS` | `2` | warm Python worker processes |
-| `WORKIFY_TESSDATA` | `data/tessdata` or system | folder with Tesseract `*.traineddata` files |
-| `NEXT_PUBLIC_GOOGLE_*`, `NEXT_PUBLIC_DROPBOX_APP_KEY` | — | Google Drive / Dropbox buttons (build time) |
+<div align="center">
 
-## Becoming admin
+**Made with ❤️ by Krishna Pandey**
 
-Sign up, verify your email, and add that email to `WORKIFY_ADMIN_EMAILS`
-(restart the app). Admins can make other users admin from `/admin/users`.
-Without SMTP the verification email is not sent; read the link from the outbox
-as described in [DEPLOY.md](DEPLOY.md#first-admin-without-smtp).
-
-## Deploying safely
-
-1. **Put it behind a reverse proxy with HTTPS** (Caddy, nginx or a CDN such as
-   Cloudflare). Run Next on `127.0.0.1` so only the proxy can reach it, and set
-   `WORKIFY_TRUST_PROXY` to the number of proxies in front of the app so
-   per-client rate limits use the real client IP. Without a proxy, per-client
-   limits can be evaded by forging `X-Forwarded-For`; the global limits and the
-   job queue still protect the server.
-2. **CDN**: all marketing and tool pages are prerendered and served with
-   `s-maxage`; `/_next/static/*` files are immutable. A CDN in front caches them
-   with no extra configuration. `/api/*`, `/account`, `/admin`, `/login`,
-   `/signup` and `/sign/*` are per-user and are not cached.
-3. **Firewall**: expose only ports 80/443 of the proxy. Never expose the Next
-   port, databases or other services directly.
-4. **Data**: `data/` holds the SQLite database, signature files, the signing
-   certificate, `secret.key` and backups. Keep it on a persistent disk, out of
-   the web root (it is, by default), and copy it off the server
-   ([DEPLOY.md](DEPLOY.md#backups)).
-
-## Security measures in the app
-
-- Per-client + global rate limits, a bounded job queue, upload size and count limits
-  checked before the body is read.
-- CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS;
-  no `X-Powered-By`.
-- Passwords hashed with scrypt; constant-time comparison; equal-time failures for unknown
-  emails; login limited per IP and per email; sessions stored as SHA-256 hashes in
-  http-only, SameSite=Lax cookies; changing the password signs out other devices.
-- Password-reset and verification links are stored only as SHA-256 hashes;
-  signing links are looked up by hash and kept encrypted (AES-256-GCM) for reminders.
-- Admin pages and actions check the admin role on the server; admins need a verified email.
-- Safe redirects after login (no open redirect).
-- Uploaded files live in random, unguessable job folders, are never served from the
-  project folder, and are deleted after one hour (immediately on failure).
-- HTML→PDF blocks private/loopback/link-local addresses, also on redirects.
-- PDF passwords are passed to qpdf through a temporary args file, not the process list.
-- Ghostscript runs with `-dSAFER`; Python runs isolated (`-I`).
-- All coordinates, sizes and texts from the editors are validated and clamped server-side.
+</div>
