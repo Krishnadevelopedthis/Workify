@@ -7,7 +7,7 @@
 # Node is pinned to a release with every published security fix (24.22.1 is the
 # October 2026 security release). Raise it with each Node.js security release;
 # a floating tag stays on whatever version the build machine pulled first.
-FROM node:24.22.1-trixie-slim
+FROM node:24.22.2-trixie-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 # PDF engines, OCR languages, office suite, headless browser and fonts.
