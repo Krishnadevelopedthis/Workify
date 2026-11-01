@@ -38,7 +38,7 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
-    "@iconify-json/tabler": "^1.2.42",
+    "@iconify-json/tabler": "^1.2.43",
     "@iconify/utils": "^3.1.7",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^24.19.2",
